@@ -1,12 +1,13 @@
 from typing import Dict, List
 from device import Device
+from storage import Storage
 
 class BleBeacon:
     """
     Class that analyses the beacons
     """
 
-    def __init__(self, service_uuid: str, threshold: int = 5, scans: int = 8, name: str = ''):
+    def __init__(self, service_uuid: str, threshold: int = 5, scans: int = 8, storage = Storage("/dev/null"), name: str = ''):
         self.scanned_devices = {}
         self.service_uuid = service_uuid
         self.threshold = threshold
@@ -15,6 +16,7 @@ class BleBeacon:
         self.devices = {_: [] for _ in range(scans)}
         self.current_scan = 0
         self.matches = []
+        self.storage = storage
 
     
     def accumulate(self) -> Dict[str, int]:

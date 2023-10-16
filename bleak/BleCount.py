@@ -2,18 +2,20 @@ from typing import List
 from device import Device
 from datetime import datetime
 from collections import namedtuple
+from storage import Storage
 
 class BleCount:
     """
     Class for analysing raw device data
     """
 
-    def __init__(self, rssi_threshold: int = -100, name: str = ''):
+    def __init__(self, rssi_threshold: int = -100, delta:int=10, storage = Storage('/dev/null'), name: str = ''):
         self.scanned_devices = {}
         self.name = name
         self.rssi_threshold = rssi_threshold
-        self.delta = 10 #seconds
+        self.delta = delta #seconds
         self.last_update = datetime.now()
+        self.storage = storage
         
 
     def filter_devices(self, devices: List[Device]) -> List[Device]:
@@ -36,7 +38,7 @@ class BleCount:
 
         # check if storage should happen
         diff = datetime.now() - self.last_update
-        if diff.total_seconds() > self.delta:
+        if diff.total_seconds() >= self.delta:
             self.store_devices()
 
     def __str__(self) -> str:
@@ -48,5 +50,20 @@ class BleCount:
     def store_devices(self):
         print(f"BleCount {self}: storing devices")
         print(f"BleCount {self}: devices found: {len(self.scanned_devices)}")
+
+        self.print(f"exact saving time: {datetime.now()}, exact delta: {datetime.now() - self.last_update}")
+
+        # format for storing:
+        # TODO note that currently this sometimes skips a value, because delta might be slightly above 10s
+        # solution? use asyncio and wait until 10s are filled?
+        now = datetime.now()
+        time = now.replace(second=(now.second // 10)*10)
+        timestr = time.strftime("%H:%M:%S")
+        
+        rssi_list = [dev.get_rssi() for dev in self.scanned_devices.values()]
+        rssi_data = [45, timestr, rssi_list]
+
+        self.storage.save_rssi(rssi_data)
+
         self.scanned_devices.clear()
         self.last_update = datetime.now()

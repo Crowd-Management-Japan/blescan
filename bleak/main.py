@@ -1,30 +1,49 @@
+
+
+
 import bleak
 import asyncio
 
 from scanning import Scanner
 from BleCount import BleCount
 from BleBeacon import BleBeacon
-
+from storage import Storage
 from led import LEDCommunicator
+from datetime import datetime
+
+import sys
+
+BEACON_UUID = '9b12a001-68f0-e742-228a-cba37cbb671f'
+SERIAL_NUMBER = 45 # TODO read from ini file
 
 async def main():
-    scanner = Scanner()
 
-    #counter = BleCount(name="counter 1")
-    #counter2 = BleCount(name="delta 5")
+    # TODO read ini file
 
-    beacon = BleBeacon(service_uuid = '9b12a001-68f0-e742-228a-cba37cbb671f')
+
+
+    storage = Storage("/home/blescan/data/test")
 
     comm = LEDCommunicator()
     comm.start_in_thread()
+
+    scanner = Scanner()
+
+
+    #beacon = BleBeacon(service_uuid = BEACON_UUID)
+    counter = BleCount(delta=10, storage=storage)
+
 
     try:
         while True:
             devices = await scanner.scan()
 
-            #counter.process_scan(devices)
+            before = datetime.now()
+            counter.process_scan(devices)
             #counter2.process_scan(devices)
-            beacon.process_scan(devices)
+            #beacon.process_scan(devices)
+            after = datetime.now()
+            print(f"processing took {after - before}")
     except KeyboardInterrupt as e:
         print("stopping application")
     finally:
