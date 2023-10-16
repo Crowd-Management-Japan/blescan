@@ -12,9 +12,12 @@ from led import LEDCommunicator
 from datetime import datetime
 
 import sys
+import config
 
-BEACON_UUID = '9b12a001-68f0-e742-228a-cba37cbb671f'
-SERIAL_NUMBER = 45 # TODO read from ini file
+config.BEACON_UUID = '9b12a001-68f0-e742-228a-cba37cbb671f'
+
+# TODO read from ini file
+config.SERIAL_NUMBER = 45
 
 async def main():
 

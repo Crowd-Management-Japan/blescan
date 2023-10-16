@@ -1,8 +1,11 @@
-from typing import List
+from typing import List, Any
 from device import Device
 from datetime import datetime
 from collections import namedtuple
 from storage import Storage
+from numpy import std, mean
+
+import config
 
 class BleCount:
     """
@@ -47,6 +50,31 @@ class BleCount:
     def print(self, text: str):
         print(f"BleCount {self}: {text}")
 
+    def get_rssi_list(self) -> List[int]:
+        return [dev.get_rssi() for dev in self.scanned_devices.values()]
+
+    def prepare_for_storing_rssi(self, id, time) -> List[Any]:
+        rssi_list = self.get_rssi_list()
+        return [id, time, rssi_list]
+
+    def prepare_for_storing_summary(self, id, time, close_threshold=-50) -> List[Any]:
+        """
+        formats scanned_devices for saving into summary file.
+        The format is a tuple like "DeviceID,Time,Close count,Total count,Avg RSSI,Std RSSI,Min RSSI,Max RSSI"
+        """
+        # use floats to make math work
+        rssi = self.get_rssi_list()#[float(_) for _ in self.get_rssi_list()]
+        count = len(rssi)
+        close = len([_ for _ in rssi if _ > close_threshold])
+        st = std(rssi)
+        avg = mean(rssi)
+        mini = min(rssi)
+        maxi = max(rssi)
+
+        return [id, time, close, count, avg, st, mini, maxi]
+
+
+
     def store_devices(self):
         print(f"BleCount {self}: storing devices")
         print(f"BleCount {self}: devices found: {len(self.scanned_devices)}")
@@ -54,16 +82,20 @@ class BleCount:
         self.print(f"exact saving time: {datetime.now()}, exact delta: {datetime.now() - self.last_update}")
 
         # format for storing:
-        # TODO note that currently this sometimes skips a value, because delta might be slightly above 10s
-        # solution? use asyncio and wait until 10s are filled?
         now = datetime.now()
         time = now.replace(second=(now.second // 10)*10)
         timestr = time.strftime("%H:%M:%S")
         
-        rssi_list = [dev.get_rssi() for dev in self.scanned_devices.values()]
-        rssi_data = [45, timestr, rssi_list]
+        serial = config.SERIAL_NUMBER
 
+        rssi_data = self.prepare_for_storing_rssi(serial, timestr)
         self.storage.save_rssi(rssi_data)
 
+        summary_data = self.prepare_for_storing_summary(serial, timestr)
+        self.print(summary_data)
+        self.storage.save_summary(summary_data)
+
         self.scanned_devices.clear()
-        self.last_update = datetime.now()
+
+        # if not using the cut time (whole 10 second steps) it might happen, that steps will be skipped
+        self.last_update = time

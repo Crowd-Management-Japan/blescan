@@ -37,7 +37,7 @@ class Storage:
     def setup_summary(self):
         filename = f"{self.filename_base}_summary.csv"
         self.setup_file(filename, "DeviceID,Time,Close count,Total count,Avg RSSI,Std RSSI,Min RSSI,Max RSSI")
-        self.files.append['summary'] = filename
+        self.files['summary'] = filename
 
 
     def setup_file(self, filename, headers):

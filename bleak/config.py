@@ -1,0 +1,4 @@
+
+
+SERIAL_NUMBER = -1
+BEACON_UUID = '9b12a001-68f0-e742-228a-cba37cbb671f'
