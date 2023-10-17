@@ -10,9 +10,26 @@ class LED:
     def __init__(self, led_code):
         self.trigger = f"/sys/class/leds/{led_code}/trigger"
         self.brightness = f"/sys/class/leds/{led_code}/brightness"
-        with open(self.trigger, 'w') as file:
-            file.write("none")
-            # TODO undo when deconstructing
+        try:
+            with open(self.trigger, 'w') as file:
+                file.write("none")
+        except FileNotFoundError:
+            print("Cannot find LEDs. Disabling LED functionality")
+            self.on = lambda: None
+            self.off = lambda: None
+            
+
+            
+    def __del__(self):
+        """
+        Set the trigger back to mmc0, which is the default setting for raspberry pi
+        """
+        try:
+            with open(self.trigger, 'w') as file:
+                print("resetting LED trigger")
+                file.write("mmc0")
+        except FileNotFoundError:
+            pass
 
     def on(self):
         with open(self.brightness, 'w') as file:
