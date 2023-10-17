@@ -3,24 +3,34 @@ import asyncio
 from datetime import datetime
 import os
 import csv
+import config
 
 
-SERIAL_NUMBER = 45
+SERIAL_NUMBER = config.SERIAL_NUMBER
 
 class Storage:
+    """
+    This class encapsulates the storage interface to make it easily reusable for different locations
+
+    The files are stored in BASE_DIR/ACC{SERIAL_NUMBER}_{CURRENT_DATE(YYMMDD)}_{rssi/summary/beacon}.csv
+    Where base_dir can be given in the constructor to choose between e.g. usb or sdcard.
+
+    This class does not check if the data is formatted correctly to the corresponding headers.
+    """
 
     def __init__(self, base_dir):
-        self.base_dir = base_dir
-        self.setup()
+        """
+        construct a storage instance.
 
-    def setup(self):
-        # trashbin, so store nothing
-        if self.base_dir == "/dev/null":
-            return
-        # RSSI
+        Keyword arguments:
+        base_dir -- the base folder to store the files
+        """
+        self.base_dir = base_dir
         if not os.path.exists(self.base_dir):
             os.makedirs(self.base_dir)
         self.filename_base = f"{self.base_dir}/ACC{SERIAL_NUMBER}_{datetime.now().strftime('%Y%m%d')}"
+
+        # keep track of what files are already registered
         self.files = {}
         
 
@@ -41,6 +51,8 @@ class Storage:
 
 
     def setup_file(self, filename, headers):
+        """ reusable function. Will check and create file with headers if not already present"""
+
         # append will create if the file does not exist, but set the courser to the end, so seek(0) to get to the start of the file
         with open(filename, "a+") as f:
             f.seek(0)
@@ -49,9 +61,13 @@ class Storage:
                 f.write(f"{headers}\n")
 
     def save_file(self, name, row_data):
+        """
+        Save data to a file. The name is used to get the file from the files attribute.
+        If it is not present there, it will try to call the similarly named setup function, which should create and register this file.
+        """
         if name not in self.files.keys():
-            setup = getattr(self, f"setup_{name}")
-            setup()
+            setup_name = getattr(self, f"setup_{name}")
+            setup_name()
         filename = self.files[name]
         with open(filename, "a") as f:
             csvwriter = csv.writer(f)

@@ -87,7 +87,7 @@ class BleCount:
         The format is the tuple (DeviceID, Time, RSSI list)
         """
         rssi_list = self.get_rssi_list()
-        return [id, time, rssi_list]
+        return [id, time, f"\"{','.join(rssi_list)}\""]
 
     def prepare_for_storing_summary(self, id, time, close_threshold=-50) -> List[Any]:
         """
@@ -135,4 +135,4 @@ class BleCount:
         self.scanned_devices.clear()
 
         # if not using the cut time (whole 10 second steps) it might happen, that steps will be skipped
-        self.last_update = time
+        self.last_update = now#time

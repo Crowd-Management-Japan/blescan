@@ -2,7 +2,6 @@ import threading
 from time import sleep
 
 class LED:
-
     """
     Setting up the LED. 
     @param led_code refers to the path specified in the raspberry where the trigger and brightness file can be found. e.g. 'led0' for the green led.
@@ -55,6 +54,10 @@ def LED_RUNNING(green: LED, red: LED):
     sleep(1)
 
 class LEDCommunicator:
+    """
+    This Class functions as a communicator towards the outside world. 
+    It starts a daemon thread that uses both LEDs on the raspberry to send information
+    """
 
     def __init__(self):
         self.running = False
@@ -77,8 +80,12 @@ class LEDCommunicator:
         self.running = True
 
         self.thread = threading.Thread(target=self.blink_blocking)
+        self.thread.daemon = True
         self.thread.start()
 
 
     def stop(self):
         self.running = False
+        self.thread.join()
+        del self.green
+        del self.red

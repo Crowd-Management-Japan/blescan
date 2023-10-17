@@ -1,6 +1,9 @@
 from typing import Dict, List, Union
 from device import Device
 from storage import Storage
+from numpy import mean
+from datetime import datetime
+
 
 class BleBeacon:
     """
@@ -36,12 +39,14 @@ class BleBeacon:
         self.name = name
         self.scans = scans
         self.devices = {_: [] for _ in range(scans)}
+        self.staying_time = {}
         self.current_scan = 0
         self.matches = []
-        self.storage = storage
+        self.storages = storage
+        self.macs = {} 
 
     
-    def accumulate(self) -> Dict[str, int]:
+    def accumulate(self) -> Dict[Device, int]:
         """
         Accumulate all scanned devices and get a list of devices and amount of scans they appeared
         """
@@ -49,21 +54,31 @@ class BleBeacon:
         for devs in self.devices.values():
             for dev in devs:
                 mac = dev.get_mac()
-                if mac not in acc:
+                if mac not in acc.keys():
                     acc[mac] = 1
                 else:
                     acc[mac] += 1
         return acc
 
 
-    def detect_matches(self, accumulation: Dict[Device, int]) -> List[Device]:
+    def detect_matches(self, accumulation: Dict[Device, int]):
         """ detect devices that are detected more often or equal to the threshold amount"""
         self.matches = [dev for dev, count in accumulation.items() if count >= self.threshold]
+
+    def update_staying_time(self):
+        for mac in self.matches:
+            device = self.macs[mac]
+            if mac not in self.staying_time.keys():
+                self.staying_time[mac] = [device.get_rssi()]
+            else:
+                self.staying_time[mac].append(device.get_rssi())
 
     def update(self, scanned_devices):
         """update the list of devices. Will add devices to the current timestep and then increase the timestep by one"""
         self.devices[self.current_scan] = scanned_devices
         self.current_scan = (self.current_scan + 1) % self.scans
+        for device in scanned_devices:
+            self.macs[device.get_mac()] = device
         #self.print(self.devices)
 
 
@@ -75,9 +90,6 @@ class BleBeacon:
     def process_scan(self, devices: List[Device]):
         """process a single 1s scan interval"""
 
-        #self.print(devices)
-
-        # filter devices above treshold
         filtered = self.filter_devices(devices)
 
         self.update(filtered)
@@ -87,8 +99,15 @@ class BleBeacon:
 
         self.detect_matches(acc)
 
-        if len(self.matches) > 0:
-            self.store_devices()
+        self.print(self.matches)
+        self.update_staying_time()
+
+        self.print(self.staying_time)
+
+        exited = [mac for mac in self.staying_time.keys() if mac not in self.matches]
+
+        if len(exited) > 0:
+            self.store_devices(exited)
 
     def __str__(self) -> str:
         return self.name
@@ -96,7 +115,37 @@ class BleBeacon:
     def print(self, text: str):
         print(f"BleBeacon {self}: {text}")
 
-    def store_devices(self):
+    def prepare_for_storing_beacon(self, timestep, mac):
+        """
+        Beacon headers: (Time,Tag Name,Staying time, Average RSSI)
+        """
+        average_rssi = mean(self.staying_time[mac])
+        time = len(self.staying_time[mac])
+
+        # TODO get tagname from device
+        tagname = ''
+
+        return [timestep, tagname, time, average_rssi]
+
+    def store_devices(self, macs):
         """store results into all given storage instances"""
         self.print("storing beacons")
-        self.print(f"beacons found: {len(self.matches)}")
+        self.print(f"beacons to store: {len(self.matches)}")
+
+        # format for storing:
+        now = datetime.now()
+        time = now.replace(second=(now.second // 10)*10)
+        timestr = time.strftime("%H:%M:%S")
+
+        data_rows = []
+
+        for mac in macs:
+            data_rows.append(self.prepare_for_storing_beacon(timestr, mac))
+            del self.staying_time[mac]
+
+        for storage in self.storages:
+            for row in data_rows:
+                self.print(f"saving row {row}")
+                storage.save_beacon(row)
+
+        
