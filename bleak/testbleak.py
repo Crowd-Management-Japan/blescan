@@ -1,63 +1,26 @@
 import bleak
 import asyncio
-import time
-from time import sleep
-from scanner import Scanner
 
-class LED:
+from bleak.backends.bluezdbus.scanner import BleakScannerBlueZDBus
 
-    def __init__(self):
-        self.trigger = "/sys/class/leds/led0/trigger"
-        self.brightness = "/sys/class/leds/led0/brightness"
-        with open(self.trigger, 'w') as file:
-            file.write("none")
-
-    def on(self):
-        with open(self.brightness, 'w') as file:
-            file.write("1")
-    
-    def off(self):
-        with open(self.brightness, 'w') as file:
-            file.write("0")
-
-async def blink(led):
-    while True:
-        led.on()
-        await asyncio.sleep(.5)
-        led.off()
-        await asyncio.sleep(.5)
-
-async def scan(scanner):
-    await scanner.start()
-
-
-def countDevices(devices):
-    print(f"count: {len(devices)}")
-
-async def terminate(time, scanner):
-    await asyncio.sleep(time)
-    #await scanner.stop()
-
+MAC1 = "EC:96:18:3A:8E:D4"
 
 async def main():
-    print("Hello World")
 
 
-    led = LED()
+    target_data = '1233aacc0dc140a78085303a6d64ddb5'
+    service_uuid = '9b12a001-68f0-e742-228a-cba37cbb671f'
 
-    scanner = Scanner()
-    scanner.subscribe(countDevices)
+    sc = bleak.BleakScanner()
 
-    asyncio.gather(scan(scanner), terminate(10, scanner))
-    #await scan(scanner)
+    while True:
+        devices = await sc.discover(1, return_adv=True)
 
+    #print(devices)
 
+        b = [dev for dev in devices.values() if 'Beacon' in dev[0].name]
 
-    #task = asyncio.create_task(scan())
-    #await asyncio.create_task(blink(led))
-
-    #await task
-    #await asyncio.gather(scan(), blink(led))
+        print(b)
 
 
 

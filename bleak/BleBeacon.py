@@ -15,7 +15,7 @@ class BleBeacon:
     For example we do 8 1s scans. If a beacon is detected more than 4 times, it is considered present in this area.
     """
 
-    def __init__(self, service_uuid: str, scans: int = 8, threshold: int = 5, storage:Union[Storage, List[Storage]] = [], name: str = ''):
+    def __init__(self, service_uuid: str, beacon_id: str = '', scans: int = 8, threshold: int = 5, storage:Union[Storage, List[Storage]] = [], name: str = ''):
         """
         Construct an instance of the Beacon Analysis.
 
@@ -35,6 +35,7 @@ class BleBeacon:
         if type(storage) is not list: storage = [storage]
         self.scanned_devices = {}
         self.service_uuid = service_uuid
+        self.beacon_id = beacon_id
         self.threshold = threshold
         self.name = name
         self.scans = scans
@@ -44,6 +45,7 @@ class BleBeacon:
         self.matches = []
         self.storages = storage
         self.macs = {} 
+        self.beacons = {}
 
     
     def accumulate(self) -> Dict[Device, int]:
@@ -79,13 +81,14 @@ class BleBeacon:
         self.current_scan = (self.current_scan + 1) % self.scans
         for device in scanned_devices:
             self.macs[device.get_mac()] = device
-        #self.print(self.devices)
 
 
 
     def filter_devices(self, devices: List[Device]) -> List[Device]:
         """ filter devices for given service_uuid"""
-        return [dev for dev in devices if self.service_uuid in dev.get_service_uuids()]
+        is_beacon = lambda dev: self.beacon_id == dev.get_beacon_uuid()
+        beacons = [dev for dev in devices if is_beacon(dev)]
+        return beacons
 
     def process_scan(self, devices: List[Device]):
         """process a single 1s scan interval"""
@@ -122,8 +125,10 @@ class BleBeacon:
         average_rssi = mean(self.staying_time[mac])
         time = len(self.staying_time[mac])
 
-        # TODO get tagname from device
-        tagname = ''
+        device = self.macs[mac]
+        self.print(device.get_manufacturer_data())
+
+        tagname = ''.join([device.get_major(), device.get_minor()])
 
         return [timestep, tagname, time, average_rssi]
 
