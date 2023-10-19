@@ -91,6 +91,7 @@ do
 			echo 0 > /sys/class/leds/led1/brightness
 			# 起動PATHを記述予定
 			/usr/bin/python3 /usr/local/ble/blesch.py
+			#/usr/bin/python3 ble/blesch.py
 			break
 		fi
 	elif [ $mode -eq 1 ]; then

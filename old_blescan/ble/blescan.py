@@ -2,7 +2,7 @@ import bluepy
 from datetime import datetime,timedelta
 import sys
 import csv
-from tag import Tag
+#from tag import Tag
 import os.path
 import os
 import time
@@ -51,9 +51,13 @@ class BleScan:
             for i in range(9):
                 # 1sスキャン実行
                 devices = scanner.scan(1)
+                print("scan")
                 for device in devices:
+                    #print(device.getScanData())
                     for (adTypeCode, description, valueText) in device.getScanData():
                         if self.targetTag in valueText:
+                            print(device)
+                            print(device.getScanData())
                             # ex:6c19705509.......[-10:-2] → 90550791
                             tmpName = valueText.replace(self.targetTag,'')[-10:-2]
                             if self.major in tmpName:
