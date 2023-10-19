@@ -34,7 +34,7 @@ async def main():
 
 
     beacon = BleBeacon(service_uuid = config.BEACON_SERVICE_UUID, beacon_id=config.BEACON_TARGET_ID, storage=sdStorage, scans=5, threshold=3)
-    #counter = BleCount(delta=8, storage=[sdStorage, usbStorage])
+    counter = BleCount(delta=10, storage=[sdStorage, usbStorage])
 
 
     try:
@@ -42,7 +42,7 @@ async def main():
             devices = await scanner.scan()
 
             before = datetime.now()
-            #counter.process_scan(devices)
+            counter.process_scan(devices)
             #counter2.process_scan(devices)
             beacon.process_scan(devices)
             after = datetime.now()

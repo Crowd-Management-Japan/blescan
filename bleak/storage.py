@@ -97,19 +97,20 @@ class Storage:
         self.save_summary(summary_row)
 
 
-    def save_from_beacon(self, devices):
+    def save_from_beacon(self, time, rssi_list, manufacturer_data):
 
         # saves devices given by BleBeacon
         # this includes the beacon file
 
-        pass
+        beacon_row = prepare_row_data_beacon(time, rssi_list, manufacturer_data)
+        self.save_beacon(beacon_row)
 
     
 
 def prepare_row_data_rssi(id, time, rssi_list):
-    return [id, time, f"\"{','.join(rssi_list)}\""]
+    return [id, time, f"\"{','.join([str(_) for _ in rssi_list])}\""]
 
-def prepare_row_data_summary(id, time, rssi_list, close_threshold):
+def prepare_row_data_summary(id, time, rssi, close_threshold):
     count = len(rssi)
     close = len([_ for _ in rssi if _ > close_threshold])
     st = std(rssi)
@@ -118,3 +119,11 @@ def prepare_row_data_summary(id, time, rssi_list, close_threshold):
     maxi = max(rssi)
 
     return [id, time, close, count, avg, st, mini, maxi]
+
+def prepare_row_data_beacon(timestr, rssi_list, manufacturer_data):
+    average_rssi = mean(rssi_list)
+    time = len(rssi_list)
+
+    tagname = ''.join([manufacturer_data['major'], manufacturer_data['minor']])
+
+    return [timestr, tagname, time, average_rssi]
