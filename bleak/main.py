@@ -1,7 +1,3 @@
-
-
-
-import bleak
 import asyncio
 
 from scanning import Scanner
@@ -20,6 +16,8 @@ config.BEACON_UUID = '9b12a001-68f0-e742-228a-cba37cbb671f'
 config.SERIAL_NUMBER = 45
 
 comm = LEDCommunicator()
+
+
 
 async def main():
 

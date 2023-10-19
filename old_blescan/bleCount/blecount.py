@@ -197,6 +197,7 @@ class BleCount:
 
         # 8sスキャン実行
         devices = scanner.scan(8)
+        print(devices)
         countClose,countTotal,avgRSSI,stdRSSI,minRSSI,maxRSSI = _calcRSSI(devices,self.threshRSSI)
 
         try:
