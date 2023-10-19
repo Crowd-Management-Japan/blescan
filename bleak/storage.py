@@ -84,7 +84,7 @@ class Storage:
         self.save_file('summary', row_data)
 
 
-    def save_from_count(self, id, timestamp, rssi_list, close_threshold):
+    async def save_from_count(self, id, timestamp, rssi_list, close_threshold):
         """
         Saves devices given by BleCount.
         This includes RSSI and summary

@@ -51,7 +51,7 @@ class BleCount:
         """filter out devices below the minimum rssi threshold"""
         return [dev for dev in devices if dev.get_rssi() > self.rssi_threshold]
 
-    def process_scan(self, devices: List[Device]):
+    async def process_scan(self, devices: List[Device]):
         """process one scan interval: accumulates devices."""
         
         filtered = self.filter_devices(devices)
@@ -70,7 +70,7 @@ class BleCount:
         # note: last_update will always end on whole 10s intervals
         diff = datetime.now() - self.last_update
         if diff.total_seconds() >= self.delta:
-            self.store_devices()
+            await self.store_devices()
 
     def __str__(self) -> str:
         return self.name
@@ -81,7 +81,7 @@ class BleCount:
     def get_rssi_list(self) -> List[int]:
         return [dev.get_rssi() for dev in self.scanned_devices.values()]
 
-    def store_devices(self):
+    async def store_devices(self):
         """
         Call all registered storage instances to save RSSI and summary statistics.
         """
@@ -98,7 +98,7 @@ class BleCount:
         serial = config.SERIAL_NUMBER
 
         for storage in self.storages:
-            storage.save_from_count(serial, timestr, self.get_rssi_list(), self.close_threshold)
+            await storage.save_from_count(serial, timestr, self.get_rssi_list(), self.close_threshold)
 
         self.scanned_devices.clear()
 
