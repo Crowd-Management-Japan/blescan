@@ -81,32 +81,6 @@ class BleCount:
     def get_rssi_list(self) -> List[int]:
         return [dev.get_rssi() for dev in self.scanned_devices.values()]
 
-    def prepare_for_storing_rssi(self, id, time) -> List[Any]:
-        """
-        Format data to match the header of the rssi.csv file.
-        The format is the tuple (DeviceID, Time, RSSI list)
-        """
-        rssi_list = self.get_rssi_list()
-        return [id, time, f"\"{','.join(rssi_list)}\""]
-
-    def prepare_for_storing_summary(self, id, time, close_threshold=-50) -> List[Any]:
-        """
-        formats scanned_devices for saving into summary file.
-        The format is the tuple (DeviceID,Time,Close count,Total count,Avg RSSI,Std RSSI,Min RSSI,Max RSSI)
-        """
-        # use floats to make math work
-        rssi = self.get_rssi_list()#[float(_) for _ in self.get_rssi_list()]
-        count = len(rssi)
-        close = len([_ for _ in rssi if _ > close_threshold])
-        st = std(rssi)
-        avg = mean(rssi)
-        mini = min(rssi)
-        maxi = max(rssi)
-
-        return [id, time, close, count, avg, st, mini, maxi]
-
-
-
     def store_devices(self):
         """
         Call all registered storage instances to save RSSI and summary statistics.
@@ -124,13 +98,7 @@ class BleCount:
         serial = config.SERIAL_NUMBER
 
         for storage in self.storages:
-
-            rssi_data = self.prepare_for_storing_rssi(serial, timestr)
-            storage.save_rssi(rssi_data)
-
-            summary_data = self.prepare_for_storing_summary(serial, timestr)
-            self.print(summary_data)
-            storage.save_summary(summary_data)
+            storage.save_from_count(serial, timestr, self.get_rssi_list(), self.close_threshold)
 
         self.scanned_devices.clear()
 

@@ -4,6 +4,7 @@ from datetime import datetime
 import os
 import csv
 import config
+from numpy import std, mean
 
 
 SERIAL_NUMBER = config.SERIAL_NUMBER
@@ -82,4 +83,38 @@ class Storage:
     def save_summary(self, row_data):
         self.save_file('summary', row_data)
 
+
+    def save_from_count(self, id, timestamp, rssi_list, close_threshold):
+        """
+        Saves devices given by BleCount.
+        This includes RSSI and summary
+        """
+
+        rssi_row = prepare_row_data_rssi(id, timestamp, rssi_list)
+        summary_row = prepare_row_data_summary(id, timestamp, rssi_list, close_threshold)
+
+        self.save_rssi(rssi_row)
+        self.save_summary(summary_row)
+
+
+    def save_from_beacon(self, devices):
+
+        # saves devices given by BleBeacon
+        # this includes the beacon file
+
+        pass
+
     
+
+def prepare_row_data_rssi(id, time, rssi_list):
+    return [id, time, f"\"{','.join(rssi_list)}\""]
+
+def prepare_row_data_summary(id, time, rssi_list, close_threshold):
+    count = len(rssi)
+    close = len([_ for _ in rssi if _ > close_threshold])
+    st = std(rssi)
+    avg = mean(rssi)
+    mini = min(rssi)
+    maxi = max(rssi)
+
+    return [id, time, close, count, avg, st, mini, maxi]
