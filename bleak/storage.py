@@ -29,7 +29,8 @@ class Storage:
         self.base_dir = base_dir
         if not os.path.exists(self.base_dir):
             os.makedirs(self.base_dir)
-        self.filename_base = f"{self.base_dir}/ACC{SERIAL_NUMBER}_{datetime.now().strftime('%Y%m%d')}"
+        self.date = datetime.today()
+        self.filename_base = f"{self.base_dir}/ACC{SERIAL_NUMBER}_{self.date.strftime('%Y%m%d')}"
 
         # keep track of what files are already registered
         self.files = {}
@@ -61,11 +62,18 @@ class Storage:
                 print(f"{filename} not existing... creating file with headers")
                 f.write(f"{headers}\n")
 
+    def check_date_update_files(self):
+        now = datetime.now()
+        if now != self.date:
+            self.__init__(self.base_dir)
+
+
     def save_file(self, name, row_data):
         """
         Save data to a file. The name is used to get the file from the files attribute.
         If it is not present there, it will try to call the similarly named setup function, which should create and register this file.
         """
+        self.check_date_update_files()
         if name not in self.files.keys():
             setup_name = getattr(self, f"setup_{name}")
             setup_name()
