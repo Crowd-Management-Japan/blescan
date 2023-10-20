@@ -118,19 +118,6 @@ class BleBeacon:
     def print(self, text: str):
         print(f"BleBeacon {self}: {text}")
 
-    def prepare_for_storing_beacon(self, timestep, mac):
-        """
-        Beacon headers: (Time,Tag Name,Staying time, Average RSSI)
-        """
-        average_rssi = mean(self.staying_time[mac])
-        time = len(self.staying_time[mac])
-
-        device = self.macs[mac]
-        self.print(device.get_manufacturer_data())
-
-        tagname = ''.join([device.get_major(), device.get_minor()])
-
-        return [timestep, tagname, time, average_rssi]
 
     def store_devices(self, macs):
         """store results into all given storage instances"""
@@ -144,13 +131,12 @@ class BleBeacon:
 
         data_rows = []
 
-        for mac in macs:
-            data_rows.append(self.prepare_for_storing_beacon(timestr, mac))
-            del self.staying_time[mac]
-
         for storage in self.storages:
-            for row in data_rows:
-                self.print(f"saving row {row}")
-                storage.save_beacon(row)
+
+            for mac in macs:
+                manufacturer_data = self.macs[mac].get_manufacturer_data()
+                storage.save_from_beacon(timestr, self.staying_time[mac], manufacturer_data)
+                del self.staying_time[mac]
+
 
         

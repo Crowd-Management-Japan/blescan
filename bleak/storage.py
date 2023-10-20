@@ -4,6 +4,7 @@ from datetime import datetime
 import os
 import csv
 import config
+from numpy import std, mean
 
 
 SERIAL_NUMBER = config.SERIAL_NUMBER
@@ -28,7 +29,8 @@ class Storage:
         self.base_dir = base_dir
         if not os.path.exists(self.base_dir):
             os.makedirs(self.base_dir)
-        self.filename_base = f"{self.base_dir}/ACC{SERIAL_NUMBER}_{datetime.now().strftime('%Y%m%d')}"
+        self.date = datetime.today()
+        self.filename_base = f"{self.base_dir}/ACC{SERIAL_NUMBER}_{self.date.strftime('%Y%m%d')}"
 
         # keep track of what files are already registered
         self.files = {}
@@ -60,11 +62,18 @@ class Storage:
                 print(f"{filename} not existing... creating file with headers")
                 f.write(f"{headers}\n")
 
+    def check_date_update_files(self):
+        now = datetime.now()
+        if now != self.date:
+            self.__init__(self.base_dir)
+
+
     def save_file(self, name, row_data):
         """
         Save data to a file. The name is used to get the file from the files attribute.
         If it is not present there, it will try to call the similarly named setup function, which should create and register this file.
         """
+        self.check_date_update_files()
         if name not in self.files.keys():
             setup_name = getattr(self, f"setup_{name}")
             setup_name()
@@ -82,4 +91,47 @@ class Storage:
     def save_summary(self, row_data):
         self.save_file('summary', row_data)
 
+
+    async def save_from_count(self, id, timestamp, rssi_list, close_threshold):
+        """
+        Saves devices given by BleCount.
+        This includes RSSI and summary
+        """
+
+        rssi_row = prepare_row_data_rssi(id, timestamp, rssi_list)
+        summary_row = prepare_row_data_summary(id, timestamp, rssi_list, close_threshold)
+
+        self.save_rssi(rssi_row)
+        self.save_summary(summary_row)
+
+
+    def save_from_beacon(self, time, rssi_list, manufacturer_data):
+
+        # saves devices given by BleBeacon
+        # this includes the beacon file
+
+        beacon_row = prepare_row_data_beacon(time, rssi_list, manufacturer_data)
+        self.save_beacon(beacon_row)
+
     
+
+def prepare_row_data_rssi(id, time, rssi_list):
+    return [id, time, f"\"{','.join([str(_) for _ in rssi_list])}\""]
+
+def prepare_row_data_summary(id, time, rssi, close_threshold):
+    count = len(rssi)
+    close = len([_ for _ in rssi if _ > close_threshold])
+    st = std(rssi)
+    avg = mean(rssi)
+    mini = min(rssi)
+    maxi = max(rssi)
+
+    return [id, time, close, count, avg, st, mini, maxi]
+
+def prepare_row_data_beacon(timestr, rssi_list, manufacturer_data):
+    average_rssi = mean(rssi_list)
+    time = len(rssi_list)
+
+    tagname = ''.join([manufacturer_data['major'], manufacturer_data['minor']])
+
+    return [timestr, tagname, time, average_rssi]

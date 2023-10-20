@@ -16,6 +16,10 @@ class LED:
             print("Cannot find LEDs. Disabling LED functionality")
             self.on = lambda: None
             self.off = lambda: None
+        except PermissionError:
+            print("Missing permission for controlling LEDs. Disabling LED functionality")
+            self.on = lambda: None
+            self.off = lambda: None
             
 
             
