@@ -6,9 +6,6 @@ import csv
 import config
 from numpy import std, mean
 
-
-SERIAL_NUMBER = config.SERIAL_NUMBER
-
 class Storage:
     """
     This class encapsulates the storage interface to make it easily reusable for different locations
@@ -30,7 +27,7 @@ class Storage:
         if not os.path.exists(self.base_dir):
             os.makedirs(self.base_dir)
         self.date = datetime.today()
-        self.filename_base = f"{self.base_dir}/ACC{SERIAL_NUMBER}_{self.date.strftime('%Y%m%d')}"
+        self.filename_base = f"{self.base_dir}/ACC{config.Config.serial_number}_{self.date.strftime('%Y%m%d')}"
 
         # keep track of what files are already registered
         self.files = {}
@@ -112,6 +109,12 @@ class Storage:
 
         beacon_row = prepare_row_data_beacon(time, rssi_list, manufacturer_data)
         self.save_beacon(beacon_row)
+
+    def __str__(self):
+        return f"Storage({self.base_dir})"
+    
+    def __repr__(self):
+        return self.__str__()
 
     
 

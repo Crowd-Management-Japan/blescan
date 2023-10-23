@@ -30,15 +30,18 @@ async def main():
     comm.start_in_thread()
 
     # setting up beacon functionality
-    beacon_storage = Config.Storage.beacon
-    beacon_target = Config.beacon_target_id
-    beacon = BleBeacon(beacon_id=beacon_target, storage=beacon_storage, name='beacon')
+    beacon_storage = Config.Beacon.storage
+    beacon_target = Config.Beacon.target_id
+    beacon_scans = Config.Beacon.scans
+    beacon_threshold = Config.Beacon.threshold
+    beacon = BleBeacon(beacon_target,beacon_scans, beacon_threshold, beacon_storage, name='beacon')
 
     # setting up counting functionality
-    counting_storage = Config.Storage.counting
-    threshold = Config.rssi_threshold
-    close_threshold = Config.rssi_close_threshold
-    counter = BleCount(threshold, close_threshold, storage=counting_storage, name='counting')
+    counting_storage = Config.Counting.storage
+    threshold = Config.Counting.rssi_threshold
+    close_threshold = Config.Counting.rssi_close_threshold
+    delta = Config.Counting.delta
+    counter = BleCount(threshold, close_threshold, delta, counting_storage, name='counting')
 
 
     scanner = Scanner()
