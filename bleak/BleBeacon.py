@@ -15,12 +15,12 @@ class BleBeacon:
     For example we do 8 1s scans. If a beacon is detected more than 4 times, it is considered present in this area.
     """
 
-    def __init__(self, service_uuid: str, beacon_id: str = '', scans: int = 8, threshold: int = 5, storage:Union[Storage, List[Storage]] = [], name: str = ''):
+    def __init__(self, beacon_id: str = '', scans: int = 8, threshold: int = 5, storage:Union[Storage, List[Storage]] = [], name: str = ''):
         """
         Construct an instance of the Beacon Analysis.
 
         Keyword arguments:
-        service_uuid -- the uuid to filter devices for. All devices with a different service_uuid will be ignored.
+        beacon_id -- the uuid to filter devices for. All devices with a different uuid in manufacturer_data will be ignored.
 
         scans -- the amount of scans to keep track of.
 
@@ -34,7 +34,6 @@ class BleBeacon:
         """
         if type(storage) is not list: storage = [storage]
         self.scanned_devices = {}
-        self.service_uuid = service_uuid
         self.beacon_id = beacon_id
         self.threshold = threshold
         self.name = name
@@ -85,7 +84,7 @@ class BleBeacon:
 
 
     def filter_devices(self, devices: List[Device]) -> List[Device]:
-        """ filter devices for given service_uuid"""
+        """ filter devices for the beacon id"""
         is_beacon = lambda dev: self.beacon_id == dev.get_beacon_uuid()
         beacons = [dev for dev in devices if is_beacon(dev)]
         return beacons
