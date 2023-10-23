@@ -8,14 +8,10 @@ from led import LEDCommunicator
 from datetime import datetime
 
 import sys
-import config
+from config import Config
 
 from network import Upstream
 
-config.BEACON_UUID = '9b12a001-68f0-e742-228a-cba37cbb671f'
-
-# TODO read from ini file
-config.SERIAL_NUMBER = 45
 
 comm = LEDCommunicator()
 
@@ -23,25 +19,29 @@ comm = LEDCommunicator()
 
 async def main():
 
-    # TODO read ini file
 
-    url = "http://www.claudiofeliciani.online/ble_system/get_count.php"
+    url = Config.Storage.internet_url
+
 
 
     upstream = Upstream(url)
 
-    sdStorage = Storage("/home/blescan/data/test")
-    usbStorage = Storage("/media/usb0/test")
 
     comm.start_in_thread()
 
+    # setting up beacon functionality
+    beacon_storage = Config.Storage.beacon
+    beacon_target = Config.beacon_target_id
+    beacon = BleBeacon(beacon_id=beacon_target, storage=beacon_storage, name='beacon')
+
+    # setting up counting functionality
+    counting_storage = Config.Storage.counting
+    threshold = Config.rssi_threshold
+    close_threshold = Config.rssi_close_threshold
+    counter = BleCount(threshold, close_threshold, storage=counting_storage, name='counting')
+
+
     scanner = Scanner()
-
-
-    #beacon = BleBeacon(service_uuid = config.BEACON_SERVICE_UUID, beacon_id=config.BEACON_TARGET_ID, storage=sdStorage, scans=5, threshold=3)
-    counter = BleCount(delta=10, storage=[upstream, sdStorage])
-
-
     try:
         while True:
             devices = await scanner.scan()
