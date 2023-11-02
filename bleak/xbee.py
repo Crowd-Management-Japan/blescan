@@ -95,7 +95,7 @@ def decode_data(data: str) -> Dict:
 
 class XBeeCommunication:
 
-    def __init__(self, sender: XBee):
+    def __init__(self, sender: XBee=None):
         self.sender = sender
         self.queue = Queue()
         self.running = False
@@ -103,6 +103,9 @@ class XBeeCommunication:
 
     def __del__(self):
         self.stop()
+
+    def set_sender(self, sender: XBee):
+        self.sender = sender
 
     def add_targets(self, targets: Union[str,List[str]]):
         """Add a set of nodes (by their node identifier (xbee NI value)) that are connected to the internet and can thus be used for internet communication.
@@ -123,6 +126,8 @@ class XBeeCommunication:
             raise RuntimeError("Sending thread already started")
         if self.targets.qsize == 0:
             raise ValueError("No targets specified")
+        if self.sender is None:
+            raise ValueError("No sender device specified")
         
         self.running = True
         self.thread = Thread(target=self._blocking_sending_loop)
@@ -154,6 +159,8 @@ class XBeeCommunication:
                 self.queue.task_done()
 
     def stop(self):
+        if self.running == False:
+            return
         self.queue.join()
         self.running = False
         self.thread.join()

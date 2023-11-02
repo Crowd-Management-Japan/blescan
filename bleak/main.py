@@ -8,26 +8,26 @@ from led import LEDCommunicator
 from datetime import datetime
 
 import sys
-from config import Config
+from config import Config, parse_ini
 
-from network import Upstream
+from network import InternetCommunicator, Upstream
 
+from xbee import XBeeCommunication, XBee, get_configuration
 
 comm = LEDCommunicator()
-
+internet = InternetCommunicator(Config.Counting.internet_url)
+xbee = XBeeCommunication()
 
 
 async def main():
-
-
-    url = Config.Storage.internet_url
-
-
-
-    upstream = Upstream(url)
-
-
+    parse_ini()
     comm.start_in_thread()
+
+    if Config.Counting.use_internet:
+        setup_internet()
+
+    if Config.Zigbee.use_zigbee:
+        setup_zigbee()
 
     # setting up beacon functionality
     beacon_storage = Config.Beacon.storage
@@ -51,7 +51,7 @@ async def main():
 
             before = datetime.now()
             await counter.process_scan(devices)
-            #counter2.process_scan(devices)
+
             #beacon.process_scan(devices)
             after = datetime.now()
             print(f"processing took {after - before}")
@@ -59,7 +59,35 @@ async def main():
         print("stopping application")
     finally:
         comm.stop()
+        xbee.stop()
 
+
+def setup_internet():
+    print("Setting up internet")
+    internet.start_thread()
+
+    up = Upstream(internet)
+    Config.Counting.storage.append(up)
+
+def print_zigbee_message(text):
+    print(text)
+
+
+def setup_zigbee():
+    print("Setting up zigbee")
+    device = XBee(Config.Zigbee.port)
+
+    conf = get_configuration(1, Config.Zigbee.coordinator, Config.Zigbee.my_label)
+
+    device.configure(conf)
+
+    xbee.set_sender(device)
+    xbee.add_targets(Config.Zigbee.internet_ids)
+
+    if Config.Zigbee.my_label in Config.Zigbee.internet_ids:
+        device.add_receive_callback(print_zigbee_message)
+    else:
+        xbee.start_sending_thread()
 
 if __name__ == "__main__":
     asyncio.run(main())

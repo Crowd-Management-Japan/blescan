@@ -1,7 +1,6 @@
 import configparser
 
 import storage
-from network import Upstream
 
 
 class Config:
@@ -16,6 +15,15 @@ class Config:
         storage = []
         use_internet = False
         internet_url = None
+
+    class Zigbee:
+        use_zigbee = False
+        internet_ids = []
+
+        port = "/dev/TTYUSB0"
+        baud_rate = 9600
+        coordinator = False
+        my_label = "42"
 
     class Beacon:
         target_id = ''
@@ -33,6 +41,9 @@ class Config:
 
         if Config.Counting.use_internet and Config.Counting.internet_url == None:
             raise ValueError(f"Using internet without defining url!")
+        
+        if Config.Zigbee.use_zigbee and not Config.Zigbee.internet_ids:
+            raise ValueError("Using Zigbee, but no internet nodes set")
         
         if not Config.Counting.storage and not Config.Beacon.storage:
             raise ValueError("Not storing any counting or beacon data!")
@@ -65,11 +76,14 @@ def _parse_counting_settings(inifile):
     # therefore we need to cast to int first
     Config.Counting.use_internet = bool(int(section.get('internet_for_counting', '0')))
     Config.Counting.internet_url = section.get('url', None)
-
-    if Config.Counting.use_internet:
-        up = Upstream(Config.Counting.internet_url)
-        Config.Counting.storage.append(up)
     
+
+def _parse_zigbee_settings(inifile):
+    section = inifile["ZIGBEE"]
+    Config.Zigbee.use_zigbee = bool(int(section.get('use_zigbee', '0')))
+    nodes = section.get('internet_nodes')
+    Config.Zigbee.internet_ids = [_.strip() for _ in nodes.split(',')]
+
 
 def _parse_beacon_settings(inifile):
     section = inifile['BEACON']
@@ -84,6 +98,7 @@ def parse_ini(path='config.ini'):
     Parse the given ini-file and set corresponding values.
     See sample ini-file for reference of possible values.
     """
+    print(f"Parsing ini file {path}")
     inifile = configparser.ConfigParser()
     inifile.read(path)
 
@@ -92,6 +107,7 @@ def parse_ini(path='config.ini'):
     Config.serial_number = inifile['USER']['devID']
 
     _parse_counting_settings(inifile)
+    _parse_zigbee_settings(inifile)
     _parse_beacon_settings(inifile)
 
     Config.check_integrity()
