@@ -81,6 +81,14 @@ def _parse_counting_settings(inifile):
 def _parse_zigbee_settings(inifile):
     section = inifile["ZIGBEE"]
     Config.Zigbee.use_zigbee = bool(int(section.get('use_zigbee', '0')))
+    if not Config.Zigbee.use_zigbee:
+        return
+    
+    Config.Zigbee.port = section.get('port', '/dev/ttyUSB0')
+    Config.Zigbee.baud_rate = int(section.get('baud_rate', 9600))
+    Config.Zigbee.coordinator = bool(int(section.get('coordinator', '0')))
+    Config.Zigbee.my_label = section.get('my_label', ' ')
+
     nodes = section.get('internet_nodes')
     Config.Zigbee.internet_ids = [_.strip() for _ in nodes.split(',')]
 

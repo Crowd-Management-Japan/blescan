@@ -7,6 +7,7 @@ from threading import Thread
 
 from storage import prepare_row_data_summary
 from datetime import datetime
+import time
 
 from digi.xbee.devices import XBeeDevice,RemoteXBeeDevice
 from digi.xbee.models.address import XBee16BitAddress
@@ -149,6 +150,7 @@ class XBeeCommunication:
 
             if target == first:
                 print(f"no target nodes reachable")
+                time.sleep(2)
 
         
 
@@ -159,11 +161,19 @@ class XBeeCommunication:
 
                 self._send_data(data)
 
+                print(f"Zigbee - Data sent to node {self.targets.queue[0]}")
                 self.queue.task_done()
+            else:
+                time.sleep(2)
+
+            if self.queue.unfinished_tasks >= 10:
+                print(f"WARNING - zigbee queue is not getting done. Size: {self.queue.unfinished_tasks}")
 
     def stop(self):
         if self.running == False:
             return
+
+        print("--- Shutting down Zigbee thread ---")
         self.queue.join()
         self.running = False
         self.thread.join()

@@ -50,12 +50,13 @@ class InternetCommunicator:
     def _sending_thread(self):
         while self.running:
             if self.send_queue.unfinished_tasks > 0:
-                print("sending message to upstream")
                 task = self.send_queue.get()
 
                 self._send_message(task)
 
                 self.send_queue.task_done()
+
+                print(f"message sent to upstream. Remaining in queue: {self.send_queue.unfinished_tasks}")
             else:
                 sleep(1)
 
@@ -73,6 +74,8 @@ class InternetCommunicator:
         self.thread.start()
 
     def stop(self):
+        if self.running == False:
+            return
         self.send_queue.join()
         self.running = False
         self.thread.join()

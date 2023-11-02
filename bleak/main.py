@@ -19,9 +19,9 @@ internet = InternetCommunicator(Config.Counting.internet_url)
 xbee = XBeeCommunication()
 
 
-async def main():
-    parse_ini()
-    comm.start_in_thread()
+async def main(config_path: str='./config.ini'):
+    parse_ini(config_path)
+    #comm.start_in_thread()
 
     if Config.Counting.use_internet:
         setup_internet()
@@ -60,10 +60,12 @@ async def main():
     finally:
         comm.stop()
         xbee.stop()
+        internet.stop()
 
 
 def setup_internet():
     print("Setting up internet")
+    global internet
     internet = InternetCommunicator(Config.Counting.internet_url)
 
     up = Upstream(internet)
@@ -72,7 +74,7 @@ def setup_internet():
     internet.start_thread()
 
 def print_zigbee_message(sender, text):
-    print(text)
+    print(f"received message from zigbee {sender}")
     decoded = decode_data(text)
     internet.enqueue_send_message(decoded)
 
@@ -84,6 +86,8 @@ def setup_zigbee():
     conf = get_configuration(1, Config.Zigbee.coordinator, Config.Zigbee.my_label)
 
     device.configure(conf)
+
+    print(f"Zigbee: port {Config.Zigbee.port} - configuration: {conf}")
 
     xbee.set_sender(device)
     xbee.add_targets(Config.Zigbee.internet_ids)
@@ -98,4 +102,10 @@ def setup_zigbee():
         xbee.start_sending_thread()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+
+    config_path = './config.ini'
+
+    if len(sys.argv) > 1:
+        config_path = sys.argv[1]
+
+    asyncio.run(main(config_path))

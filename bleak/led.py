@@ -66,9 +66,11 @@ class LEDCommunicator:
     def __init__(self):
         self.running = False
         self.code = LED_RUNNING
+
+    def setup(self):
         self.green = LED('led0')
         self.red = LED('led1')
-        pass
+
 
     def blink_blocking(self):
         while self.running:
@@ -89,6 +91,8 @@ class LEDCommunicator:
 
 
     def stop(self):
+        if self.running == False:
+            return
         self.running = False
         self.thread.join()
         del self.green
