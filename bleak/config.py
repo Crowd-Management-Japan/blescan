@@ -20,10 +20,10 @@ class Config:
         use_zigbee = False
         internet_ids = []
 
-        port = "/dev/TTYUSB0"
+        port = "/dev/ttyUSB0"
         baud_rate = 9600
-        coordinator = False
-        my_label = "42"
+        coordinator = True
+        my_label = "42_C"
 
     class Beacon:
         target_id = ''
@@ -45,7 +45,7 @@ class Config:
         if Config.Zigbee.use_zigbee and not Config.Zigbee.internet_ids:
             raise ValueError("Using Zigbee, but no internet nodes set")
         
-        if not Config.Counting.storage and not Config.Beacon.storage:
+        if not Config.Counting.storage and not Config.Beacon.storage and not Config.Counting.use_internet:
             raise ValueError("Not storing any counting or beacon data!")
 
 def _get_storage_paths(inifile, section, key):

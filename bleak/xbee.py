@@ -1,9 +1,12 @@
-
+import asyncio
 from config import Config
 
 from typing import Dict, List, Union
 from queue import Queue
 from threading import Thread
+
+from storage import prepare_row_data_summary
+from datetime import datetime
 
 from digi.xbee.devices import XBeeDevice,RemoteXBeeDevice
 from digi.xbee.models.address import XBee16BitAddress
@@ -39,7 +42,7 @@ class XBee:
         self.device.open()
 
     def add_receive_callback(self, callback: lambda device, text: None):
-        self.callbacks += callback
+        self.callbacks.append(callback)
 
     def get_param(self, name: str) -> bytearray:
         return self.device.get_parameter(name)
@@ -71,7 +74,7 @@ class XBee:
 
 
 def get_configuration(pan_id=1, is_coordinator=False, label=' '):
-    params = {'ID': pan_id.to_bytes(8), 'CE': (1 if is_coordinator else 0).to_bytes(1), 'NI': bytearray(label, "utf8")}
+    params = {'ID': pan_id.to_bytes(8, 'little'), 'CE': (1 if is_coordinator else 0).to_bytes(1, 'little'), 'NI': bytearray(label, "utf8")}
 
     return params
     
@@ -89,7 +92,7 @@ def decode_data(data: str) -> Dict:
     s = data.split(",")
 
     return {"device_id": int(s[0]), "date": s[1], "time": s[2], "count": int(s[3]), "total": int(s[4]), 
-            'rssi_avg':int(s[5]),'rssi_std':int(s[6]),'rssi_min':int(s[7]),'rssi_max':int(s[8])}
+            'rssi_avg':float(s[5]),'rssi_std':float(s[6]),'rssi_min':int(s[7]),'rssi_max':int(s[8])}
 
 
 
@@ -166,3 +169,20 @@ class XBeeCommunication:
         self.thread.join()
         self.sender.device.close()
     
+
+class ZigbeeStorage:
+
+    def __init__(self, com):
+        self.com = com
+
+    
+    async def save_from_count(self, id, timestamp, rssi_list, close_threshold):
+
+        summary = prepare_row_data_summary(id, timestamp, rssi_list, close_threshold)
+        # %Y%m%d,%H%M%S
+        date = datetime.now().strftime("%Y%m%d")
+
+        params = {'device_id':id,'date':date,'time':timestamp.replace(':', ''),'count':summary[2],'total':summary[3],
+                                    'rssi_avg':summary[4],'rssi_std':summary[5],'rssi_min':summary[6],'rssi_max':summary[7]}
+
+        self.com.encode_and_send(params)

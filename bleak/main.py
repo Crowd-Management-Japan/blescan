@@ -12,7 +12,7 @@ from config import Config, parse_ini
 
 from network import InternetCommunicator, Upstream
 
-from xbee import XBeeCommunication, XBee, get_configuration
+from xbee import XBeeCommunication, XBee, get_configuration, decode_data, ZigbeeStorage
 
 comm = LEDCommunicator()
 internet = InternetCommunicator(Config.Counting.internet_url)
@@ -54,7 +54,7 @@ async def main():
 
             #beacon.process_scan(devices)
             after = datetime.now()
-            print(f"processing took {after - before}")
+            #print(f"processing took {after - before}")
     except KeyboardInterrupt as e:
         print("stopping application")
     finally:
@@ -71,8 +71,10 @@ def setup_internet():
 
     internet.start_thread()
 
-def print_zigbee_message(text):
+def print_zigbee_message(sender, text):
     print(text)
+    decoded = decode_data(text)
+    internet.enqueue_send_message(decoded)
 
 
 def setup_zigbee():
@@ -87,8 +89,12 @@ def setup_zigbee():
     xbee.add_targets(Config.Zigbee.internet_ids)
 
     if Config.Zigbee.my_label in Config.Zigbee.internet_ids:
+        print("Setting up zigbee as receiver")
         device.add_receive_callback(print_zigbee_message)
     else:
+        print("Setting up zigbee as sender")
+        stor = ZigbeeStorage(xbee)
+        Config.Counting.storage.append(stor)
         xbee.start_sending_thread()
 
 if __name__ == "__main__":

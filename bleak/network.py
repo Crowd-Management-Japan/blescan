@@ -16,7 +16,6 @@ class Upstream:
     def check_connection(self):
         pass
 
-
     async def save_from_count(self, id, timestamp, rssi_list, close_threshold):
 
         # return value is "DeviceID,Time,Close count,Total count,Avg RSSI,Std RSSI,Min RSSI,Max RSSI"
