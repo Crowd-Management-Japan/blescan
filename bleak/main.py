@@ -64,10 +64,12 @@ async def main():
 
 def setup_internet():
     print("Setting up internet")
-    internet.start_thread()
+    internet = InternetCommunicator(Config.Counting.internet_url)
 
     up = Upstream(internet)
     Config.Counting.storage.append(up)
+
+    internet.start_thread()
 
 def print_zigbee_message(text):
     print(text)
