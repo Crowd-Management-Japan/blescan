@@ -1,7 +1,9 @@
 
 from config import Config
 
-from typing import Dict
+from typing import Dict, List, Union
+from queue import Queue
+from threading import Thread
 
 from digi.xbee.devices import XBeeDevice,RemoteXBeeDevice
 from digi.xbee.models.address import XBee16BitAddress
@@ -52,6 +54,19 @@ class XBee:
 
     def get_label(self) -> str:
         return self.get_param("NI").decode()
+    
+    def send_to_device(self, node_identifier: str, data: str) -> bool:
+        net = self.device.get_network()
+        remote = net.discover_device(node_identifier)
+        if remote is None:
+            return False
+        try:
+            self.device.send_data(remote, data)
+            return True
+        except TransmitException:
+            print(f"Error sending to node {node_identifier}")
+            return False
+        
 
 
 
@@ -82,5 +97,63 @@ class XBeeCommunication:
 
     def __init__(self, sender: XBee):
         self.sender = sender
+        self.queue = Queue()
+        self.running = False
+        self.targets = Queue()
 
+    def __del__(self):
+        self.stop()
+
+    def add_targets(self, targets: Union[str,List[str]]):
+        """Add a set of nodes (by their node identifier (xbee NI value)) that are connected to the internet and can thus be used for internet communication.
+        Data will be sent to one of these.
+        """
+        if type(targets) is not list: targets = [targets]
+        for target in targets:
+            self.targets.put(target)
+
+    def encode_and_send(self, data: Dict):
+        self.send_data(encode_data(data))
+
+    def send_data(self, data: str):
+        self.queue.put(data)
+
+    def start_sending_thread(self):
+        if self.running:
+            raise RuntimeError("Sending thread already started")
+        if self.targets.qsize == 0:
+            raise ValueError("No targets specified")
+        
+        self.running = True
+        self.thread = Thread(target=self._blocking_sending_loop)
+        self.thread.daemon = True
+        self.thread.start()
+
+    def _send_data(self, data: str):
+        target = self.targets.queue[0]
+        first = target
+
+        while not self.sender.send_to_device(target, data):
+            target = self.targets.get()
+            self.targets.put(target)
+            target = self.targets.queue[0]
+
+            if target == first:
+                print(f"no target nodes reachable")
+
+        
+
+    def _blocking_sending_loop(self):
+        while self.running:
+            if self.queue.unfinished_tasks > 0:
+                data = self.queue.get()
+
+                self._send_data(data)
+
+                self.queue.task_done()
+
+    def stop(self):
+        self.running = False
+        self.thread.join()
+        del self.sender()
     
