@@ -134,6 +134,7 @@ class XBeeCommunication:
         first = target
 
         while not self.sender.send_to_device(target, data):
+            print(f"cannot reach target {target}")
             target = self.targets.get()
             self.targets.put(target)
             target = self.targets.queue[0]
@@ -153,7 +154,8 @@ class XBeeCommunication:
                 self.queue.task_done()
 
     def stop(self):
+        self.queue.join()
         self.running = False
         self.thread.join()
-        del self.sender()
+        self.sender.device.close()
     
