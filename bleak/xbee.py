@@ -9,7 +9,7 @@ from storage import prepare_row_data_summary
 from datetime import datetime
 import time
 
-from digi.xbee.devices import XBeeDevice,RemoteXBeeDevice
+from digi.xbee.devices import XBeeDevice
 from digi.xbee.models.address import XBee16BitAddress
 from digi.xbee.models.message import XBeeMessage
 from digi.xbee.exception import TransmitException,XBeeException,TimeoutException
