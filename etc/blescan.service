@@ -1,0 +1,26 @@
+[Unit]
+Description=Ble Scan Service
+Wants=network.target
+After=rc-local.service local-fs.target network-pre.target apparmor.service systemd-sysctl.service systemd-modules-load.service ifupdown-pre.service bluetooth.target
+#Before=network.target shutdown.target network-online.target
+#Conflicts=shutdown.target
+
+
+[Service]
+ExecStart=/home/blescan/blescan/bleak/start.sh
+User=blescan
+# OLD blescan service
+#User=root
+#ExecStart=/usr/local/etc/kick.sh
+#ExecStart=/usr/bin/python3 /home/blescan/ble/ble.py
+#Restart=always
+#RestartSec=3s
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=BLEservice
+WorkingDirectory=/home/blescan/blescan
+
+
+[Install]
+WantedBy=multi-user.target
+

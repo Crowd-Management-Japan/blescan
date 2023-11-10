@@ -1,8 +1,6 @@
 #!/bin/bash
 
-cd /home/blescan/blescan/bleak
-
-source /home/blescan/blescan/.venv/bin/activate
+source .venv/bin/activate
 
 leds=(led0 led1)
 
@@ -17,6 +15,5 @@ done
 
 
 echo starting main program...
-echo using python `which python`
 
-python -u /home/blescan/blescan/bleak/main.py
+python -u bleak/main.py
