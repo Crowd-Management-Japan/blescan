@@ -57,6 +57,8 @@ def _get_storage_paths(inifile, section, key):
     stors = []
 
     for stor in keys:
+        if stor == '':
+            continue
         path = paths.get(stor, None)
         if path == None:
             raise ValueError(f"No path definition for storage {stor}! exiting")
@@ -66,6 +68,7 @@ def _get_storage_paths(inifile, section, key):
     return stors
 
 def _parse_counting_settings(inifile):
+    print("parsing counting config")
     section = inifile['COUNTING']
     Config.Counting.rssi_threshold = int(section.get('rssi_threshold', -100))
     Config.Counting.rssi_close_threshold = int(section.get('rssi_close_threshold', Config.Counting.rssi_threshold))
@@ -94,6 +97,7 @@ def _parse_zigbee_settings(inifile):
 
 
 def _parse_beacon_settings(inifile):
+    print("parsing beacon config")
     section = inifile['BEACON']
     Config.Beacon.target_id = section.get('target_id', '')
     Config.Beacon.scans = int(section.get('scans', 8))

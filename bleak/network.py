@@ -1,6 +1,5 @@
 
 from storage import prepare_row_data_summary
-import aiohttp
 from datetime import datetime
 from queue import Queue
 from typing import List, Dict, Union
