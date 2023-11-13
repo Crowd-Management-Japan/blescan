@@ -15,15 +15,13 @@ from digi.xbee.models.address import XBee16BitAddress
 from digi.xbee.models.message import XBeeMessage
 from digi.xbee.exception import TransmitException,XBeeException,TimeoutException
 
-BAUD_RATE = 9600
-
 logger = logging.getLogger('blescan.XBee')
 
 
 class XBee:
 
     def __init__(self, port):
-        self.device = XBeeDevice(port, BAUD_RATE)
+        self.device = XBeeDevice(port, Config.Zigbee.baud_rate)
         self.device.open()
         self.device.add_data_received_callback(self._message_received)
         self.callbacks = []
