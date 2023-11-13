@@ -4,7 +4,7 @@ import logging
 import sys
 import os
 
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
 
 WRAPPER_CONFIG_PATH = "./wrapper/config.ini"
 BLESCAN_CONFIG_PATH = "./etc/blescan_conf.ini"
@@ -20,6 +20,9 @@ def main():
             get_new_config()
         else:
             logging.info("config is up-to-date")
+            
+        # give callback that this device is ready to use
+        requests.post(get_url("setup/completed_{}"))
 
     except requests.RequestException:
         logging.info("No internet connection, starting with existing config")
@@ -76,10 +79,12 @@ def get_new_config():
         file.write(config)
     
     logging.info("done")
-
-    # give callback that this device is ready to use
-    requests.post(get_url("setup_completed_{}"))
     
+
+def response_done():
+    # give callback that this device is ready to use
+    requests.post(get_url("setup/completed_{}"))
+
 
 if __name__ == "__main__":
 
