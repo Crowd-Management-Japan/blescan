@@ -5,6 +5,9 @@ import os
 import csv
 import config
 from numpy import std, mean
+import logging 
+
+logger = logging.getLogger('blescan.Storage')
 
 class Storage:
     """
@@ -56,7 +59,7 @@ class Storage:
         with open(filename, "a+") as f:
             f.seek(0)
             if len(f.readlines()) < 1:
-                print(f"{filename} not existing... creating file with headers")
+                logger.info(f"{filename} not existing... creating file with headers")
                 f.write(f"{headers}\n")
 
     def check_date_update_files(self):

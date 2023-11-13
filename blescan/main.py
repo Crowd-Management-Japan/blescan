@@ -1,12 +1,20 @@
 import asyncio
 
+import logging
+# setup logging
+logging.basicConfig(level=logging.ERROR, 
+                    format=('%(name)s %(levelname)s %(filename)s: %(lineno)d:\t%(message)s'))
+logging.getLogger('blescan').setLevel(logging.DEBUG)
+logger = logging.getLogger('blescan')
+
+
+
 from scanning import Scanner
 from BleCount import BleCount
 from BleBeacon import BleBeacon
 from storage import Storage
 from led import LEDCommunicator
 from datetime import datetime
-import logging
 
 import sys
 from config import Config, parse_ini
@@ -19,7 +27,6 @@ comm = LEDCommunicator()
 internet = InternetCommunicator(Config.Counting.internet_url)
 xbee = XBeeCommunication()
 
-logging.getLogger().setLevel(logging.INFO)
 
 async def main(config_path: str='./config.ini'):
     parse_ini(config_path)
@@ -36,18 +43,18 @@ async def main(config_path: str='./config.ini'):
     beacon_target = Config.Beacon.target_id
     beacon_scans = Config.Beacon.scans
     beacon_threshold = Config.Beacon.threshold
-    beacon = BleBeacon(beacon_target,beacon_scans, beacon_threshold, beacon_storage, name='beacon')
+    beacon = BleBeacon(beacon_target,beacon_scans, beacon_threshold, beacon_storage)
 
     # setting up counting functionality
     counting_storage = Config.Counting.storage
     threshold = Config.Counting.rssi_threshold
     close_threshold = Config.Counting.rssi_close_threshold
     delta = Config.Counting.delta
-    counter = BleCount(threshold, close_threshold, delta, counting_storage, name='counting')
+    counter = BleCount(threshold, close_threshold, delta, counting_storage)
 
     scanner = Scanner()
 
-    logging.info("--- Startup complete. Begin scanning ---")
+    logger.info("--- Startup complete. Begin scanning ---")
 
     try:
         while True:
@@ -56,11 +63,11 @@ async def main(config_path: str='./config.ini'):
             before = datetime.now()
             await counter.process_scan(devices)
 
-            #beacon.process_scan(devices)
+            beacon.process_scan(devices)
             after = datetime.now()
-            #print(f"processing took {after - before}")
+            logging.debug(f"processing took {after - before}")
     except KeyboardInterrupt as e:
-        print("stopping application")
+        logger.error("stopping application")
     finally:
         comm.stop()
         xbee.stop()
@@ -68,7 +75,7 @@ async def main(config_path: str='./config.ini'):
 
 
 def setup_internet():
-    print("Setting up internet")
+    logger.debug("Setting up internet")
     global internet
     internet = InternetCommunicator(Config.Counting.internet_url)
 
@@ -78,29 +85,29 @@ def setup_internet():
     internet.start_thread()
 
 def print_zigbee_message(sender, text):
-    print(f"received message from zigbee {sender}")
+    logger.debug(f"received message from zigbee {sender}")
     decoded = decode_data(text)
     internet.enqueue_send_message(decoded)
 
 
 def setup_zigbee():
-    print("Setting up zigbee")
+    logger.debug("Setting up zigbee")
     device = XBee(Config.Zigbee.port)
 
     conf = get_configuration(1, Config.Zigbee.coordinator, Config.Zigbee.my_label)
 
     device.configure(conf)
 
-    print(f"Zigbee: port {Config.Zigbee.port} - configuration: {conf}")
+    logger.info(f"Zigbee: port {Config.Zigbee.port} - configuration: {conf}")
 
     xbee.set_sender(device)
     xbee.add_targets(Config.Zigbee.internet_ids)
 
     if Config.Zigbee.my_label in Config.Zigbee.internet_ids:
-        print("Setting up zigbee as receiver")
+        logger.info("Setting up zigbee as receiver")
         device.add_receive_callback(print_zigbee_message)
     else:
-        print("Setting up zigbee as sender")
+        logger.info("Setting up zigbee as sender")
         stor = ZigbeeStorage(xbee)
         Config.Counting.storage.append(stor)
         xbee.start_sending_thread()

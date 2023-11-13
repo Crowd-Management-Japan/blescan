@@ -8,6 +8,7 @@ from threading import Thread
 from storage import prepare_row_data_summary
 from datetime import datetime
 import time
+import logging
 
 from digi.xbee.devices import XBeeDevice
 from digi.xbee.models.address import XBee16BitAddress
@@ -15,6 +16,8 @@ from digi.xbee.models.message import XBeeMessage
 from digi.xbee.exception import TransmitException,XBeeException,TimeoutException
 
 BAUD_RATE = 9600
+
+logger = logging.getLogger('blescan.XBee')
 
 
 class XBee:
@@ -68,7 +71,7 @@ class XBee:
             self.device.send_data(remote, data)
             return True
         except TransmitException:
-            print(f"Error sending to node {node_identifier}")
+            logger.error(f"Error sending to node {node_identifier}")
             return False
         
 
@@ -143,13 +146,13 @@ class XBeeCommunication:
         first = target
 
         while not self.sender.send_to_device(target, data):
-            print(f"cannot reach target {target}")
+            logger.debug(f"cannot reach target {target}")
             target = self.targets.get()
             self.targets.put(target)
             target = self.targets.queue[0]
 
             if target == first:
-                print(f"no target nodes reachable")
+                logger.warn(f"no target nodes reachable. Try again in 2s")
                 time.sleep(2)
 
         
@@ -161,23 +164,25 @@ class XBeeCommunication:
 
                 self._send_data(data)
 
-                print(f"Zigbee - Data sent to node {self.targets.queue[0]}")
+                logger.debug(f"Data sent to node {self.targets.queue[0]}")
                 self.queue.task_done()
             else:
                 time.sleep(2)
 
             if self.queue.unfinished_tasks >= 10:
-                print(f"WARNING - zigbee queue is not getting done. Size: {self.queue.unfinished_tasks}")
+                logger.warn(f"zigbee queue is not getting done. Size: {self.queue.unfinished_tasks}")
+        logger.info("zigbee thread finished")
 
     def stop(self):
         if self.running == False:
             return
 
-        print("--- Shutting down Zigbee thread ---")
+        logger.info("--- Shutting down Zigbee thread ---")
         self.queue.join()
         self.running = False
         self.thread.join()
         self.sender.device.close()
+        logger.info("done")
     
 
 class ZigbeeStorage:

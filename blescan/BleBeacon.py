@@ -4,6 +4,9 @@ from storage import Storage
 from numpy import mean
 from datetime import datetime
 
+import logging
+
+logger = logging.getLogger(f'blescan.Beacon')
 
 class BleBeacon:
     """
@@ -15,7 +18,7 @@ class BleBeacon:
     For example we do 8 1s scans. If a beacon is detected more than 4 times, it is considered present in this area.
     """
 
-    def __init__(self, beacon_id: str = '', scans: int = 8, threshold: int = 5, storage:Union[Storage, List[Storage]] = [], name: str = ''):
+    def __init__(self, beacon_id: str = '', scans: int = 8, threshold: int = 5, storage:Union[Storage, List[Storage]] = []):
         """
         Construct an instance of the Beacon Analysis.
 
@@ -29,14 +32,11 @@ class BleBeacon:
         storage -- storage -- a single or a list of storage instances to save the data to. 
                     Multiple storage instances could be used for saving to USB and to SDcard as backup.
                     This class uses the save_beacon function to save the data.
-
-        name -- a name used for printing messages to the console
         """
         if type(storage) is not list: storage = [storage]
         self.scanned_devices = {}
         self.beacon_id = beacon_id
         self.threshold = threshold
-        self.name = name
         self.scans = scans
         self.devices = {_: [] for _ in range(scans)}
         self.staying_time = {}
@@ -97,14 +97,14 @@ class BleBeacon:
         self.update(filtered)
         acc = self.accumulate()
 
-        self.print(acc)
+        logger.debug(acc)
 
         self.detect_matches(acc)
 
-        self.print(self.matches)
+        logger.debug(self.matches)
         self.update_staying_time()
 
-        self.print(self.staying_time)
+        logger.debug(self.staying_time)
 
         exited = [mac for mac in self.staying_time.keys() if mac not in self.matches]
 
@@ -114,14 +114,10 @@ class BleBeacon:
     def __str__(self) -> str:
         return self.name
 
-    def print(self, text: str):
-        print(f"BleBeacon {self}: {text}")
-
-
     def store_devices(self, macs):
         """store results into all given storage instances"""
-        self.print("storing beacons")
-        self.print(f"beacons to store: {len(self.matches)}")
+        logger.debug("storing beacon data")
+        logger.info(f"beacons to store: {len(self.matches)}")
 
         # format for storing:
         now = datetime.now()

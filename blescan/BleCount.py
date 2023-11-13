@@ -6,6 +6,9 @@ from storage import Storage
 from numpy import std, mean
 
 import config
+import logging
+
+logger = logging.getLogger('blescan.Counting')
 
 class BleCount:
     """
@@ -17,7 +20,7 @@ class BleCount:
     When saving, this accumulation is cleared to mimic the next longer scan.
     """
 
-    def __init__(self, rssi_threshold: int = -100, rssi_close_treshold = -50, delta:int=10, storage: Union[Storage,List[Storage]] = [], name: str = ''):
+    def __init__(self, rssi_threshold: int = -100, rssi_close_treshold = -50, delta:int=10, storage: Union[Storage,List[Storage]] = []):
         """
         Create an instance to keep track of the total amount of devices.
 
@@ -34,12 +37,9 @@ class BleCount:
         storage -- a single or a list of storage instances to save the data to. 
                     Multiple storage instances could be used for saving to USB and to SDcard as backup.
                     This class uses the save_rssi and save_summary functions to save data.
-
-        name -- used when printing messages for better identification
         """
         if type(storage) is not list: storage = [storage]
         self.scanned_devices = {}
-        self.name = name
         self.rssi_threshold = rssi_threshold
         self.close_threshold = rssi_close_treshold
         self.delta = delta
@@ -75,9 +75,6 @@ class BleCount:
     def __str__(self) -> str:
         return self.name
 
-    def print(self, text: str):
-        print(f"BleCount {self}: {text}")
-
     def get_rssi_list(self) -> List[int]:
         return [dev.get_rssi() for dev in self.scanned_devices.values()]
 
@@ -85,10 +82,10 @@ class BleCount:
         """
         Call all registered storage instances to save RSSI and summary statistics.
         """
-        self.print("storing devices")
-        self.print(f"devices found: {len(self.scanned_devices)}")
+        logger.debug("storing devices")
+        logger.info(f"devices found: {len(self.scanned_devices)}")
 
-        self.print(f"exact saving time: {datetime.now()}, exact delta: {datetime.now() - self.last_update}")
+        logger.debug(f"exact saving time: {datetime.now()}, exact delta: {datetime.now() - self.last_update}")
 
         # format for storing:
         now = datetime.now()

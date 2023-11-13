@@ -1,5 +1,8 @@
 import threading
 from time import sleep
+import logging
+
+logger = logging.getLogger('blescan.LED')
 
 class LED:
     """
@@ -13,11 +16,11 @@ class LED:
             with open(self.trigger, 'w') as file:
                 file.write("none")
         except FileNotFoundError:
-            print("Cannot find LEDs. Disabling LED functionality")
+            logger.error("Cannot find LEDs. Disabling LED functionality")
             self.on = lambda: None
             self.off = lambda: None
         except PermissionError:
-            print("Missing permission for controlling LEDs. Disabling LED functionality")
+            logger.error("Missing permission for controlling LEDs. Disabling LED functionality")
             self.on = lambda: None
             self.off = lambda: None
             
@@ -29,7 +32,7 @@ class LED:
         """
         try:
             with open(self.trigger, 'w') as file:
-                print("resetting LED trigger")
+                logger.debug("resetting LED trigger")
                 file.write("mmc0")
         except FileNotFoundError:
             pass
@@ -76,11 +79,12 @@ class LEDCommunicator:
         while self.running:
             function = self.code
             function(self.green, self.red)
-        print("thread finishing")
+        logger.info("thread finishing")
 
     def start_in_thread(self):
+        logger.info("--- starting LED thread ---")
         if self.running:
-            print("blinking thread already started")
+            logger.error("blinking thread already started")
             return
         
         self.running = True
@@ -88,12 +92,15 @@ class LEDCommunicator:
         self.thread = threading.Thread(target=self.blink_blocking)
         self.thread.daemon = True
         self.thread.start()
+        logger.info("done")
 
 
     def stop(self):
+        logger.info("--- shutting down LED thread ---")
         if self.running == False:
             return
         self.running = False
         self.thread.join()
         del self.green
         del self.red
+        logger.info("done")

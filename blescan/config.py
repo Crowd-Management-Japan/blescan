@@ -3,6 +3,8 @@ import configparser
 import storage
 import logging
 
+logger = logging.getLogger('blescan.config')
+
 class Config:
 
     inifile = None
@@ -61,18 +63,19 @@ def _get_storage_paths(inifile, section, key):
             continue
         path = paths.get(stor, None)
         if path == None:
-            raise ValueError(f"No path definition for storage {stor}! exiting")
+            logger.error(f"No path definition for storage {stor}! Ignoring")
+            continue
 
         try:
 
             stors.append(storage.Storage(path))
         except PermissionError:
-            logging.error("No permissions for storage %s. Ignoring", path)
+            logger.error("No permissions for storage %s. Ignoring", path)
 
     return stors
 
 def _parse_counting_settings(inifile):
-    print("parsing counting config")
+    logger.debug("parsing counting config")
     section = inifile['COUNTING']
     Config.Counting.rssi_threshold = int(section.get('rssi_threshold', -100))
     Config.Counting.rssi_close_threshold = int(section.get('rssi_close_threshold', Config.Counting.rssi_threshold))
@@ -101,7 +104,7 @@ def _parse_zigbee_settings(inifile):
 
 
 def _parse_beacon_settings(inifile):
-    print("parsing beacon config")
+    logger.debug("parsing beacon config")
     section = inifile['BEACON']
     Config.Beacon.target_id = section.get('target_id', '')
     Config.Beacon.scans = int(section.get('scans', 8))
@@ -114,7 +117,7 @@ def parse_ini(path='config.ini'):
     Parse the given ini-file and set corresponding values.
     See sample ini-file for reference of possible values.
     """
-    print(f"Parsing ini file {path}")
+    logger.info(f"Parsing ini file {path}")
     inifile = configparser.ConfigParser()
     inifile.read(path)
 

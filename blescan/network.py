@@ -6,6 +6,10 @@ from typing import List, Dict, Union
 import requests
 from threading import Thread
 from time import sleep
+import logging
+
+logger = logging.getLogger('blescan.Network')
+
 
 class Upstream:
 
@@ -44,7 +48,7 @@ class InternetCommunicator:
     def _send_message(self, data: Dict):
         response = requests.get(self.url, params=data)
         if response.status_code != 200:
-            print(f"Error sending message to upstream url -- {response}")
+            logger.error(f"Error sending message to upstream url -- {response}")
 
     def _sending_thread(self):
         while self.running:
@@ -55,26 +59,28 @@ class InternetCommunicator:
 
                 self.send_queue.task_done()
 
-                print(f"message sent to upstream. Remaining in queue: {self.send_queue.unfinished_tasks}")
+                logger.debug(f"message sent to upstream. Remaining in queue: {self.send_queue.unfinished_tasks}")
             else:
                 sleep(1)
 
-        print("Internet thread finished")
+        logger.info("Internet thread finished")
 
     def start_thread(self):
 
         if self.running == True:
-            print(f"Internet thread already running")
+            logger.error(f"Internet thread already running")
 
-        print("--- Starting Internet Communication Thread ---")
+        logger.info("--- Starting Internet Communication Thread ---")
 
         self.running = True
         self.thread = Thread(target=self._sending_thread, daemon=True)
         self.thread.start()
 
     def stop(self):
+        logger.info("--- shutting down Network thread ---")
         if self.running == False:
             return
         self.send_queue.join()
         self.running = False
         self.thread.join()
+        logger.info("done")
