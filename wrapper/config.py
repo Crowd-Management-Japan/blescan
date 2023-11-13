@@ -13,11 +13,21 @@ def read_config(path='./config.ini'):
 
     section = inifile["BASE"]
 
-    Config.id = section.get('id')
+    Config.id = section.get('devID')
     Config.url = section.get('url')
 
     logging.debug("parsing complete")
 
+def read_id(path):
+    try:
+        inifile = configparser.ConfigParser()
+        inifile.read(path)
+        section = inifile['USER']
+
+        return int(section.get('devID', 0))
+    except KeyError:
+        logging.error("cannot read id from given inifile %s", path)
+        return 0
 
 def read_last_updated(path='../bleak/config.ini'):
     try:

@@ -1,4 +1,4 @@
-from config import Config, read_config, read_last_updated
+from config import Config, read_config, read_last_updated, read_id
 import requests
 import logging
 import sys
@@ -15,7 +15,7 @@ def main():
     read_config(WRAPPER_CONFIG_PATH)
 
     try:
-        if is_update_needed():
+        if is_update_needed() or is_different_id():
             logging.info("update needed, downloading new config")
             get_new_config()
         else:
@@ -38,6 +38,12 @@ def main():
     logging.info("--- starting blescan ---")
     # the actual start is done by the start.sh script, so just exit
     sys.exit(0)
+
+def is_different_id():
+    wrapper = read_id(WRAPPER_CONFIG_PATH)
+    blescan = read_id(BLESCAN_CONFIG_PATH)
+
+    return wrapper != blescan
 
 def is_update_needed():
     request = requests.get(get_url("setup/last_updated/{}"), timeout=5)
