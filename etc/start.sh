@@ -14,6 +14,14 @@ do
 done
 
 
-echo starting main program...
+echo starting wrapper program...
 
-python -u bleak/main.py
+# -u for unbuffered output to see it in systemctl status
+python -u wrapper/blescan-wrapper.py
+
+if [ $? -eq 0 ]
+then
+    python -u bleak/main.py
+else
+    echo wrapper returned error
+fi
