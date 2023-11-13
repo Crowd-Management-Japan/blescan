@@ -1,7 +1,7 @@
 import configparser
 
 import storage
-
+import logging
 
 class Config:
 
@@ -63,7 +63,11 @@ def _get_storage_paths(inifile, section, key):
         if path == None:
             raise ValueError(f"No path definition for storage {stor}! exiting")
 
-        stors.append(storage.Storage(path))
+        try:
+
+            stors.append(storage.Storage(path))
+        except PermissionError:
+            logging.error("No permissions for storage %s. Ignoring", path)
 
     return stors
 

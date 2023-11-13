@@ -6,6 +6,7 @@ from BleBeacon import BleBeacon
 from storage import Storage
 from led import LEDCommunicator
 from datetime import datetime
+import logging
 
 import sys
 from config import Config, parse_ini
@@ -18,6 +19,7 @@ comm = LEDCommunicator()
 internet = InternetCommunicator(Config.Counting.internet_url)
 xbee = XBeeCommunication()
 
+logging.getLogger().setLevel(logging.INFO)
 
 async def main(config_path: str='./config.ini'):
     parse_ini(config_path)
@@ -43,8 +45,10 @@ async def main(config_path: str='./config.ini'):
     delta = Config.Counting.delta
     counter = BleCount(threshold, close_threshold, delta, counting_storage, name='counting')
 
-
     scanner = Scanner()
+
+    logging.info("--- Startup complete. Begin scanning ---")
+
     try:
         while True:
             devices = await scanner.scan()
