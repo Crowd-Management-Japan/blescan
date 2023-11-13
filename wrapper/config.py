@@ -11,7 +11,7 @@ def read_config(path='./config.ini'):
     inifile = configparser.ConfigParser()
     inifile.read(path)
 
-    section = inifile["BASE"]
+    section = inifile["USER"]
 
     Config.id = section.get('devID')
     Config.url = section.get('url')

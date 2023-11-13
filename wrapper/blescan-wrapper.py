@@ -4,7 +4,7 @@ import logging
 import sys
 import os
 
-logging.getLogger().setLevel(logging.INFO)
+logging.getLogger().setLevel(logging.DEBUG)
 
 WRAPPER_CONFIG_PATH = "./wrapper/config.ini"
 BLESCAN_CONFIG_PATH = "./etc/blescan_conf.ini"
@@ -42,6 +42,8 @@ def main():
 def is_different_id():
     wrapper = read_id(WRAPPER_CONFIG_PATH)
     blescan = read_id(BLESCAN_CONFIG_PATH)
+
+    logging.debug("comparing devIDs (local <> requested): %d <> %d", blescan, wrapper)
 
     return wrapper != blescan
 
