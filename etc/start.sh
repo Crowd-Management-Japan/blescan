@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# all paths should be from blescan as root
+BLESCAN_CONFIG_PATH='etc/blescan.conf'
+BLESCAN_FALLBACK_CONFIG='bleak/config.ini'
+WRAPPER_CONFIG_PATH='etc/wrapper.conf'
+
+
+
 source .venv/bin/activate
 
 leds=(led0 led1)
@@ -17,11 +24,13 @@ done
 echo starting wrapper program...
 
 # -u for unbuffered output to see it in systemctl status
-python -u wrapper/blescan-wrapper.py
+python -u wrapper/blescan-wrapper.py $WRAPPER_CONFIG_PATH $BLESCAN_CONFIG_PATH
 
 if [ $? -eq 0 ]
 then
-    python -u bleak/main.py
+    python -u bleak/main.py $BLESCAN_CONFIG_PATH
 else
     echo wrapper returned error
+    echo starting blescan with default config
+    python -u bleak/main.py $BLESCAN_FALLBACK_CONFIG
 fi

@@ -1,4 +1,5 @@
 import configparser
+import logging
 
 class Config:
 
@@ -6,7 +7,7 @@ class Config:
     url = ''
 
 def read_config(path='./config.ini'):
-    print(f"Parsing ini file {path}")
+    logging.debug(f"Parsing ini file {path}")
     inifile = configparser.ConfigParser()
     inifile.read(path)
 
@@ -15,6 +16,9 @@ def read_config(path='./config.ini'):
     Config.id = section.get('id')
     Config.url = section.get('url')
 
+    logging.debug("parsing complete")
+
+
 def read_last_updated(path='../bleak/config.ini'):
     try:
         inifile = configparser.ConfigParser()
@@ -22,5 +26,9 @@ def read_last_updated(path='../bleak/config.ini'):
         section = inifile["USER"]
 
         return int(section.get('last_updated', 0))
-    except:
-        return 0
+    except FileNotFoundError:
+        logging.error("Configfile not found")
+        return -1
+    except KeyError:
+        logging.error("Config file in wrong format.")
+        return -1
