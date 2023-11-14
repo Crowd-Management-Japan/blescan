@@ -7,14 +7,10 @@ After=rc-local.service local-fs.target network-pre.target apparmor.service syste
 
 
 [Service]
-ExecStart=/home/blescan/blescan/bleak/start.sh
+ExecStart=/home/blescan/blescan/etc/start.sh
 User=blescan
-# OLD blescan service
-#User=root
-#ExecStart=/usr/local/etc/kick.sh
-#ExecStart=/usr/bin/python3 /home/blescan/ble/ble.py
-#Restart=always
-#RestartSec=3s
+Restart=always
+RestartSec=3s
 StandardOutput=syslog
 StandardError=syslog
 SyslogIdentifier=BLEservice
