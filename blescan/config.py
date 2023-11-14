@@ -24,7 +24,7 @@ class Config:
 
         port = "/dev/ttyUSB0"
         baud_rate = 9600
-        coordinator = True
+        is_coordinator = True
         my_label = "42_C"
 
     class Beacon:
@@ -96,7 +96,7 @@ def _parse_zigbee_settings(inifile):
     
     Config.Zigbee.port = section.get('port', '/dev/ttyUSB0')
     Config.Zigbee.baud_rate = int(section.get('baud_rate', 9600))
-    Config.Zigbee.coordinator = bool(int(section.get('coordinator', '0')))
+    Config.Zigbee.is_coordinator = bool(int(section.get('is_coordinator', '0')))
     Config.Zigbee.my_label = section.get('my_label', ' ')
 
     nodes = section.get('internet_nodes')
