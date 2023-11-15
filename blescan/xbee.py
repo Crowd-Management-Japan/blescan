@@ -14,6 +14,7 @@ from digi.xbee.devices import XBeeDevice
 from digi.xbee.models.address import XBee16BitAddress
 from digi.xbee.models.message import XBeeMessage
 from digi.xbee.exception import TransmitException,XBeeException,TimeoutException
+import serial
 
 logger = logging.getLogger('blescan.XBee')
 
@@ -70,6 +71,9 @@ class XBee:
             return True
         except TransmitException:
             logger.error(f"Error sending to node {node_identifier}")
+            return False
+        except TimeoutException:
+            logger.error(f"Zigbee timeout")
             return False
         
 
@@ -153,6 +157,15 @@ class XBeeCommunication:
                 logger.warn(f"no target nodes reachable. Try again in 2s")
                 time.sleep(2)
 
+    def _start_thread(self):
+        while self.running:
+            try:
+                self._blocking_sending_loop()
+            except serial.SerialException:
+                logger.exception("Serial exception caught. Zigbee-device might not be closed correctly.")
+            except:
+                logger.exception("Fatal exception in Zigbee-thread. restarting")
+        logger.info("zigbee thread finished")
         
 
     def _blocking_sending_loop(self):
@@ -169,7 +182,6 @@ class XBeeCommunication:
 
             if self.queue.unfinished_tasks >= 10:
                 logger.warn(f"zigbee queue is not getting done. Size: {self.queue.unfinished_tasks}")
-        logger.info("zigbee thread finished")
 
     def stop(self):
         if self.running == False:
