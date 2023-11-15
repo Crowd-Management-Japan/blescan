@@ -97,14 +97,8 @@ class BleBeacon:
         self.update(filtered)
         acc = self.accumulate()
 
-        logger.debug(acc)
-
         self.detect_matches(acc)
-
-        logger.debug(self.matches)
         self.update_staying_time()
-
-        logger.debug(self.staying_time)
 
         exited = [mac for mac in self.staying_time.keys() if mac not in self.matches]
 
