@@ -163,6 +163,9 @@ class XBeeCommunication:
                 self._blocking_sending_loop()
             except serial.SerialException:
                 logger.exception("Serial exception caught. Zigbee-device might not be closed correctly.")
+                self.sender.device.close()
+                time.sleep(2)
+                self.sender.device.open()
             except:
                 logger.exception("Fatal exception in Zigbee-thread. restarting")
         logger.info("zigbee thread finished")
