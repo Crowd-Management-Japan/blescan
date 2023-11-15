@@ -169,6 +169,7 @@ class XBeeCommunication:
             except:
                 logger.exception("Fatal exception in Zigbee-thread. restarting")
         logger.info("zigbee thread finished")
+        self.sender.device.close()
         
 
     def _blocking_sending_loop(self):
