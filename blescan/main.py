@@ -94,7 +94,7 @@ def setup_zigbee():
     logger.debug("Setting up zigbee")
     device = XBee(Config.Zigbee.port)
 
-    conf = get_configuration(1, Config.Zigbee.is_coordinator, Config.Zigbee.my_label)
+    conf = get_configuration()
 
     device.configure(conf)
 

@@ -79,7 +79,7 @@ class XBee:
 
 
 
-def get_configuration(pan_id=1, is_coordinator=False, label=' '):
+def get_configuration(pan_id=Config.Zigbee.pan, is_coordinator=Config.Zigbee.is_coordinator, label=Config.Zigbee.my_label):
     params = {'ID': pan_id.to_bytes(8, 'little'), 'CE': (1 if is_coordinator else 0).to_bytes(1, 'little'), 'NI': bytearray(label, "utf8")}
 
     return params
@@ -163,11 +163,12 @@ class XBeeCommunication:
                 self._blocking_sending_loop()
             except serial.SerialException:
                 logger.exception("Serial exception caught. Zigbee-device might not be closed correctly.")
+            except:
+                logger.exception("Fatal exception in Zigbee-thread. restarting")
+            finally:
                 self.sender.device.close()
                 time.sleep(2)
                 self.sender.device.open()
-            except:
-                logger.exception("Fatal exception in Zigbee-thread. restarting")
         logger.info("zigbee thread finished")
         self.sender.device.close()
         

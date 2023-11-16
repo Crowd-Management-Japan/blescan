@@ -25,7 +25,8 @@ class Config:
         port = "/dev/ttyUSB0"
         baud_rate = 9600
         is_coordinator = True
-        my_label = "42_C"
+        my_label = "_"
+        pan = 1
 
     class Beacon:
         target_id = ''
@@ -98,6 +99,7 @@ def _parse_zigbee_settings(inifile):
     Config.Zigbee.baud_rate = int(section.get('baud_rate', 9600))
     Config.Zigbee.is_coordinator = bool(int(section.get('is_coordinator', '0')))
     Config.Zigbee.my_label = section.get('my_label', ' ')
+    Config.Zigbee.pan = int(section.get('pan', 1))
 
     nodes = section.get('internet_nodes')
     Config.Zigbee.internet_ids = [_.strip() for _ in nodes.split(',')]
