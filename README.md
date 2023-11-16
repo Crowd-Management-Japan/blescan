@@ -1,11 +1,11 @@
-# blescan
+# Blescan
 Blescan is a software developed for raspberry pi's to gather information about crowd densities and pedestrian behaviour.
 
-Its focus is to be flexible and easy to use for everbody, mainly scientist in the field of crowd management.
+Its focus is to be flexible and easy to use for everbody, mainly scientists in the field of crowd management.
 
 # How it works
 Blescan basically uses the bluetooth LE technology (ble) to scan for nearby available devices (e.g. smartphones). 
-This information will be collected and processed to be used for density estimation (if many devices were scanned, there are many smartphones thus many people).
+This information will be collected and processed to be used for density estimation (if many devices were scanned, there are many smartphones and thus many people).
 Bluetooth technology is somehow limited in the range, but we can setup a grid of Raspberry Pi's running this software and observe movement of crowds, 
 create live heatmaps of certain places or track specific devices (e.g. bluetooth beacons handed out to people (see privacy)).
 
