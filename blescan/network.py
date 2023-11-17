@@ -50,7 +50,7 @@ class InternetCommunicator:
         self.send_queue.put(data)
 
     def _send_message(self, data: Dict):
-        response = requests.get(self.url, params=data)
+        response = requests.post(self.url, data=data)
         if response.status_code != 200:
             logger.error(f"Error sending message to upstream url -- {response}")
 
