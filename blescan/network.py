@@ -8,6 +8,8 @@ from threading import Thread
 from time import sleep
 import logging
 
+import json
+
 logger = logging.getLogger('blescan.Network')
 
 
@@ -29,7 +31,7 @@ class Upstream:
         # %Y%m%d,%H%M%S
         date = datetime.now().strftime("%Y%m%d")
 
-        params = {'device_id':id,'date':date,'time':timestamp.replace(':', ''),'count':summary[2],'total':summary[3],
+        params = {'id':id,'date':date,'time':timestamp.replace(':', ''),'count':summary[2],'total':summary[3],
                                     'rssi_avg':summary[4],'rssi_std':summary[5],'rssi_min':summary[6],'rssi_max':summary[7]}
 
         self.com.enqueue_send_message(params)
@@ -48,11 +50,31 @@ class InternetCommunicator:
             self.send_queue.get()
             self.send_queue.task_done()
         self.send_queue.put(data)
+        logger.debug("enqueued message, size %d", self.send_queue.unfinished_tasks)
 
     def _send_message(self, data: Dict):
-        response = requests.post(self.url, data=data)
-        if response.status_code != 200:
-            logger.error(f"Error sending message to upstream url -- {response}")
+        logger.debug("sending message")
+        code = 0
+        while code != 200:
+            try:
+                response = requests.post(self.url, json=data, timeout=5)
+                code = response.status_code
+                if response.status_code != 200:
+                    logger.error(f"Error sending message to upstream url -- {response}")
+            except:
+                logger.error("No internet. try reconnecting")
+                self._wait_for_internet()
+
+    def _wait_for_internet(self):
+        code = 0
+        while code != 200:
+            try:
+                response = requests.get(self.url, timeout=5)
+                code = response.status_code
+            except:
+                logger.info("no internet connection. Retry connecting in 5 seconds")
+                sleep(5)
+        logger.info("internet connection succeeded")
 
     def _sending_thread(self):
         while self.running:
