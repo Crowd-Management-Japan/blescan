@@ -105,6 +105,7 @@ class XBeeCommunication:
         self.queue = Queue()
         self.running = False
         self.targets = Queue()
+        self._max_size = 100
 
     def __del__(self):
         self.stop()
@@ -124,6 +125,9 @@ class XBeeCommunication:
         self.send_data(encode_data(data))
 
     def send_data(self, data: str):
+        if self.queue.unfinished_tasks >= self._max_size:
+            self.queue.get()
+            self.queue.task_done()
         self.queue.put(data)
 
     def start_sending_thread(self):

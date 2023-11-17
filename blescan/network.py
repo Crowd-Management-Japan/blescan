@@ -40,9 +40,13 @@ class InternetCommunicator:
     def __init__(self, url):
         self.url = url
         self.send_queue = Queue()
+        self._max_queue_size = 100
         self.running = False
 
     def enqueue_send_message(self, data: Dict):
+        if self.send_queue.unfinished_tasks >= self._max_queue_size:
+            self.send_queue.get()
+            self.send_queue.task_done()
         self.send_queue.put(data)
 
     def _send_message(self, data: Dict):
