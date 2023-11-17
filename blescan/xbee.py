@@ -93,7 +93,7 @@ def decode_data(data: str) -> Dict:
 
     s = data.split(",")
 
-    return {"device_id": int(s[0]), "date": s[1], "time": s[2], "count": int(s[3]), "total": int(s[4]), 
+    return {"id": int(s[0]), "date": s[1], "time": s[2], "count": int(s[3]), "total": int(s[4]), 
             'rssi_avg':float(s[5]),'rssi_std':float(s[6]),'rssi_min':int(s[7]),'rssi_max':int(s[8])}
 
 
@@ -199,7 +199,7 @@ class ZigbeeStorage:
         # %Y%m%d,%H%M%S
         date = datetime.now().strftime("%Y%m%d")
 
-        params = {'device_id':id,'date':date,'time':timestamp.replace(':', ''),'count':summary[2],'total':summary[3],
+        params = {'id':id,'date':date,'time':timestamp.replace(':', ''),'count':summary[2],'total':summary[3],
                                     'rssi_avg':summary[4],'rssi_std':summary[5],'rssi_min':summary[6],'rssi_max':summary[7]}
 
         self.com.encode_and_send(params)
