@@ -5,7 +5,8 @@ BLESCAN_CONFIG_PATH='etc/blescan.conf'
 BLESCAN_FALLBACK_CONFIG='blescan/config.ini'
 WRAPPER_CONFIG_PATH='etc/wrapper.conf'
 
-
+# update git repository
+git pull origin master
 
 source .venv/bin/activate
 
