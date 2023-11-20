@@ -73,6 +73,7 @@ class InternetCommunicator:
                 code = response.status_code
             except:
                 logger.info("no internet connection. Retry connecting in 5 seconds")
+            finally:
                 sleep(5)
         logger.info("internet connection succeeded")
 
