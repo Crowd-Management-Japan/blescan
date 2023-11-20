@@ -36,12 +36,14 @@ class Upstream:
         # {'device_id': '45', 'date': '20231020', 'time': '104000', 'count': '26', 'total': '26', 'rssi_avg': '-93.615', 'rssi_std': '3.329', 'rssi_min': '-99', 'rssi_max': '-85'}
         
         # %Y%m%d,%H%M%S
-        date = datetime.now().strftime("%Y%m%d")
+        date = datetime.datetime.now().strftime("%Y%m%d")
 
         
 
         params = {'id':id,'timestamp': time_format,'date':date,'time':old_format.replace(':', ''),'close':summary[2],'count':summary[3],
                                     'rssi_avg':summary[4],'rssi_std':summary[5],'rssi_min':summary[6],'rssi_max':summary[7]}
+
+        logger.debug(params)
 
         self.com.enqueue_send_message(params)
 

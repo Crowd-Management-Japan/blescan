@@ -65,7 +65,7 @@ class Storage:
                 f.write(f"{headers}\n")
 
     def check_date_update_files(self):
-        now = datetime.now()
+        now = datetime.datetime.now()
         if now != self.date:
             self.__init__(self.base_dir)
 
