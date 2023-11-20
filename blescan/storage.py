@@ -1,11 +1,13 @@
 import asyncio
 #from main import SERIAL_NUMBER
-from datetime import datetime
+import datetime
 import os
 import csv
 import config
 from numpy import std, mean
 import logging 
+from typing import List
+import util
 
 logger = logging.getLogger('blescan.Storage')
 
@@ -29,7 +31,7 @@ class Storage:
         self.base_dir = base_dir
         if not os.path.exists(self.base_dir):
             os.makedirs(self.base_dir)
-        self.date = datetime.today()
+        self.date = datetime.datetime.today()
         self.filename_base = f"{self.base_dir}/ACC{config.Config.serial_number}_{self.date.strftime('%Y%m%d')}"
 
         # keep track of what files are already registered
@@ -92,14 +94,16 @@ class Storage:
         self.save_file('summary', row_data)
 
 
-    async def save_from_count(self, id, timestamp, rssi_list, close_threshold):
+    async def save_from_count(self, id: int, timestamp: datetime.datetime, rssi_list: List, close_threshold:int):
         """
         Saves devices given by BleCount.
         This includes RSSI and summary
         """
 
-        rssi_row = prepare_row_data_rssi(id, timestamp, rssi_list)
-        summary_row = prepare_row_data_summary(id, timestamp, rssi_list, close_threshold)
+        time_format = util.format_datetime_old(timestamp)
+
+        rssi_row = prepare_row_data_rssi(id, time_format, rssi_list)
+        summary_row = prepare_row_data_summary(id, time_format, rssi_list, close_threshold)
 
         self.save_rssi(rssi_row)
         self.save_summary(summary_row)
@@ -124,7 +128,7 @@ class Storage:
 def prepare_row_data_rssi(id, time, rssi_list):
     return [id, time, f"\"{','.join([str(_) for _ in rssi_list])}\""]
 
-def prepare_row_data_summary(id, time, rssi, close_threshold):
+def prepare_row_data_summary(id: int, time: str, rssi: List, close_threshold: int):
     count = len(rssi)
     close = len([_ for _ in rssi if _ > close_threshold])
     st = std(rssi)

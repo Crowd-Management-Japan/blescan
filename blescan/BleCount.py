@@ -90,12 +90,11 @@ class BleCount:
         # format for storing:
         now = datetime.now()
         time = now.replace(second=(now.second // 10)*10)
-        timestr = time.strftime("%H:%M:%S")
         
         serial = config.Config.serial_number
 
         for storage in self.storages:
-            await storage.save_from_count(serial, timestr, self.get_rssi_list(), self.close_threshold)
+            await storage.save_from_count(serial, time, self.get_rssi_list(), self.close_threshold)
 
         self.scanned_devices.clear()
 

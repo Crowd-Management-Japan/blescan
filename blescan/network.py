@@ -7,11 +7,14 @@ import requests
 from threading import Thread
 from time import sleep
 import logging
+import datetime
+import util
 
 import json
 
 logger = logging.getLogger('blescan.Network')
 
+DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 class Upstream:
 
@@ -21,17 +24,23 @@ class Upstream:
     def check_connection(self):
         pass
 
-    async def save_from_count(self, id, timestamp, rssi_list, close_threshold):
+    async def save_from_count(self, id: int, timestamp: datetime.datetime, rssi_list: List, close_threshold: int):
+
+
+        time_format = util.format_datetime_network(timestamp)
+        old_format = util.format_datetime_old(timestamp)
 
         # return value is "DeviceID,Time,Close count,Total count,Avg RSSI,Std RSSI,Min RSSI,Max RSSI"
-        summary = prepare_row_data_summary(id, timestamp, rssi_list, close_threshold)
+        summary = prepare_row_data_summary(id, time_format, rssi_list, close_threshold)
 
         # {'device_id': '45', 'date': '20231020', 'time': '104000', 'count': '26', 'total': '26', 'rssi_avg': '-93.615', 'rssi_std': '3.329', 'rssi_min': '-99', 'rssi_max': '-85'}
         
         # %Y%m%d,%H%M%S
         date = datetime.now().strftime("%Y%m%d")
 
-        params = {'id':id,'date':date,'time':timestamp.replace(':', ''),'count':summary[2],'total':summary[3],
+        
+
+        params = {'id':id,'timestamp': time_format,'date':date,'time':old_format.replace(':', ''),'close':summary[2],'count':summary[3],
                                     'rssi_avg':summary[4],'rssi_std':summary[5],'rssi_min':summary[6],'rssi_max':summary[7]}
 
         self.com.enqueue_send_message(params)
