@@ -94,7 +94,7 @@ def decode_data(data: str) -> Dict:
 
     s = data.split(",")
 
-    return {"id": int(s[0]), "timestamp": util.read_network_datetime(s[1]),"date": s[2], "time": s[3], "count": int(s[4]), "total": int(s[5]), 
+    return {"id": int(s[0]), "timestamp": s[1],"date": s[2], "time": s[3], "count": int(s[4]), "total": int(s[5]), 
             'rssi_avg':float(s[6]),'rssi_std':float(s[7]),'rssi_min':int(s[8]),'rssi_max':int(s[9])}
 
 
