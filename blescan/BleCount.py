@@ -99,4 +99,4 @@ class BleCount:
         self.scanned_devices.clear()
 
         # if not using the cut time (whole 10 second steps) it might happen, that steps will be skipped
-        self.last_update = now#time
+        self.last_update = time
