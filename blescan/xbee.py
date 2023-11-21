@@ -94,7 +94,7 @@ def decode_data(data: str) -> Dict:
 
     s = data.split(",")
 
-    return {"id": int(s[0]), "timestamp": s[1],"date": s[2], "time": s[3], "count": int(s[4]), "total": int(s[5]), 
+    return {"id": int(s[0]), "timestamp": s[1],"date": s[2], "time": s[3], "close": int(s[4]), "count": int(s[5]), 
             'rssi_avg':float(s[6]),'rssi_std':float(s[7]),'rssi_min':int(s[8]),'rssi_max':int(s[9])}
 
 
@@ -203,7 +203,7 @@ class ZigbeeStorage:
         time_format = util.format_datetime_network(timestamp)
         old_format = util.format_datetime_old(timestamp)
 
-        params = {'id':id, 'timestamp': time_format, 'date':date,'time':old_format, 'count':summary[2],'total':summary[3],
+        params = {'id':id, 'timestamp': time_format, 'date':date,'time':old_format, 'close':summary[2],'count':summary[3],
                                     'rssi_avg':summary[4],'rssi_std':summary[5],'rssi_min':summary[6],'rssi_max':summary[7]}
 
         self.com.encode_and_send(params)
