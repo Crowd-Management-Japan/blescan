@@ -123,7 +123,7 @@ def parse_ini(path='config.ini'):
 
     Config.inifile = inifile
 
-    Config.serial_number = inifile['USER']['devID']
+    Config.serial_number = int(inifile['USER']['devID'])
 
     _parse_counting_settings(inifile)
     _parse_zigbee_settings(inifile)
