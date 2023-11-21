@@ -43,7 +43,7 @@ class Upstream:
         params = {'id':id,'timestamp': time_format,'date':date,'time':old_format.replace(':', ''),'close':summary[2],'count':summary[3],
                                     'rssi_avg':summary[4],'rssi_std':summary[5],'rssi_min':summary[6],'rssi_max':summary[7]}
 
-        logger.debug(params)
+        logger.debug("sending message to %s: %s", self.com.url, params)
 
         self.com.enqueue_send_message(params)
 
@@ -72,6 +72,7 @@ class InternetCommunicator:
                 code = response.status_code
                 if response.status_code != 200:
                     logger.error(f"Error sending message to upstream url -- {response}")
+                    sleep(2)
             except:
                 logger.error("No internet. try reconnecting")
                 self._wait_for_internet()
