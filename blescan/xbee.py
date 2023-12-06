@@ -10,6 +10,7 @@ import util
 from datetime import datetime
 import time
 import logging
+import traceback
 
 from digi.xbee.devices import XBeeDevice
 from digi.xbee.models.address import XBee16BitAddress
@@ -71,6 +72,10 @@ class XBee:
             return True
         except TransmitException:
             logger.error(f"Error sending to node {node_identifier}")
+            return False
+        except TimeoutException:
+            logger.error(f"Timeout during connection. Try again in 5s")
+            time.sleep(5)
             return False
         
 
@@ -162,18 +167,23 @@ class XBeeCommunication:
 
     def _blocking_sending_loop(self):
         while self.running:
-            if self.queue.unfinished_tasks > 0:
-                data = self.queue.get()
+            try: 
+                if self.queue.unfinished_tasks > 0:
+                    data = self.queue.get()
 
-                self._send_data(data)
+                    self._send_data(data)
 
-                logger.debug(f"Data sent to node {self.targets.queue[0]}")
-                self.queue.task_done()
-            else:
-                time.sleep(2)
+                    logger.debug(f"Data sent to node {self.targets.queue[0]}")
+                    self.queue.task_done()
+                else:
+                    time.sleep(2)
 
-            if self.queue.unfinished_tasks >= 10:
-                logger.warn(f"zigbee queue is not getting done. Size: {self.queue.unfinished_tasks}")
+                if self.queue.unfinished_tasks >= 10:
+                    logger.warn(f"zigbee queue is not getting done. Size: {self.queue.unfinished_tasks}")
+            except Exception as e:
+                logger.error(f"uncaught exception")
+                logger.error(traceback.format_exc())
+                time.sleep(5)
         logger.info("zigbee thread finished")
 
     def stop(self):
