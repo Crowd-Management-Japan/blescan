@@ -30,7 +30,7 @@ xbee = XBeeCommunication()
 
 async def main(config_path: str='./config.ini'):
     parse_ini(config_path)
-    comm.start_in_thread()
+    #comm.start_in_thread()
 
     if Config.Counting.use_internet:
         setup_internet()
