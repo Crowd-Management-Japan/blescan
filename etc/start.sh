@@ -19,6 +19,7 @@ do
     sudo chgrp led "/sys/class/leds/$led/brightness"
     sudo chmod g+w /sys/class/leds/$led/trigger
     sudo chmod g+w /sys/class/leds/$led/brightness
+    sudo echo 1 > /sys/class/leds/$led/brightness
 done
 
 
