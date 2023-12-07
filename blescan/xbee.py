@@ -12,6 +12,9 @@ import time
 import logging
 import traceback
 
+import serial.tools.list_ports
+
+
 from digi.xbee.devices import XBeeDevice
 from digi.xbee.models.address import XBee16BitAddress
 from digi.xbee.models.message import XBeeMessage
@@ -217,3 +220,20 @@ class ZigbeeStorage:
                                     'rssi_avg':summary[4],'rssi_std':summary[5],'rssi_min':summary[6],'rssi_max':summary[7]}
 
         self.com.encode_and_send(params)
+
+
+def auto_find_port():
+    ports = serial.tools.list_ports.comports()
+
+    possibles = []
+
+    for port in ports:
+        if port.manufacturer == "FTDI" and port.product == "FT231X USB UART":
+            possibles.append(port.device)
+
+    if len(possibles) == 0:
+        logger.warn("No port automatically detected. Return default /dev/ttyUSB0")
+        return "/dev/ttyUSB0"
+    if len(possibles) > 1:
+        logger.warn(f"zigbee port is ambigeous. [{','.join(possibles)}]")
+    return possibles[0]
