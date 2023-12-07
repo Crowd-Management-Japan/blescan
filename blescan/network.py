@@ -74,8 +74,9 @@ class InternetCommunicator:
                 if response.status_code != 200:
                     logger.error(f"Error sending message to upstream url -- {response}")
                     sleep(2)
-            except:
+            except Exception as e:
                 logger.error("No internet. try reconnecting")
+                logger.error("Exception catched: %s", e)
                 self._wait_for_internet()
 
     def _wait_for_internet(self):
