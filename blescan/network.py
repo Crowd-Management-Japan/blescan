@@ -9,6 +9,7 @@ from time import sleep
 import logging
 import datetime
 import util
+import traceback
 
 import json
 
@@ -91,16 +92,20 @@ class InternetCommunicator:
 
     def _sending_thread(self):
         while self.running:
-            if self.send_queue.unfinished_tasks > 0:
-                task = self.send_queue.get()
+            try: 
+                if self.send_queue.unfinished_tasks > 0:
+                    task = self.send_queue.get()
 
-                self._send_message(task)
+                    self._send_message(task)
 
-                self.send_queue.task_done()
+                    self.send_queue.task_done()
 
-                logger.debug(f"message sent to upstream. Remaining in queue: {self.send_queue.unfinished_tasks}")
-            else:
-                sleep(1)
+                    logger.debug(f"message sent to upstream. Remaining in queue: {self.send_queue.unfinished_tasks}")
+                else:
+                    sleep(1)
+            except Exception as e:
+                logger.error("Exception in Internet thread")
+                logger.error(traceback.format_exc(e))
 
         logger.info("Internet thread finished")
 
