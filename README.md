@@ -47,4 +47,31 @@ They have to be handed out to people, so they know that they get something that 
 Is is important and your responsibility to brief them according to privacy laws in your country!
 
 # How to use
-TODO
+
+We use this project for around 50 raspberry devices. To make things easier we created the [blescan-backend](https://github.com/Crowd-Management-Japan/blescan-backend).
+It provides a simple API and webinterface for easy setup and following live-data.
+The setup process is more focused on working with this backend.
+
+## single raspberry 
+Clone the repository to the raspberry.
+When using the productive version, run the `etc/install_scriptsh`. It will also install a service and add it to autostart.  
+
+Doing manually:
+- (optional) create python environment
+- install requirements `pip install -r requirements.txt`
+- edit `blescan/config.ini` as you need
+- run `blescan/main.py`
+
+## Using multiple raspberry pi's
+When using multiple raspi's it might be good to have a look at the [blescan-backend](https://github.com/Crowd-Management-Japan/blescan-backend).
+
+### Installation
+With the backend the installation process is much easier. First, install the backend.
+Then, inside the raspberry just run `curl <ip:port>/setup/install_<id> > install.sh` where id is the id of the raspberry used (needed when uploading the data later, just choose a number).
+This will download a script with the full setup and installation.
+
+### Running
+When running the backend, you should not run `blescan/main.py` directly. Instead run `./etc/start.sh`. It will start a wrapper first, that communicates with the backend, downloads the latest config and then starts blescan based on this config.
+
+# Contributing
+Feel free to open Issues, or resolve them and open merge requests.
