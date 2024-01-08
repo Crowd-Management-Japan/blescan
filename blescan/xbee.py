@@ -12,6 +12,9 @@ import time
 import logging
 import traceback
 
+import serial.tools.list_ports
+
+
 from digi.xbee.devices import XBeeDevice
 from digi.xbee.models.address import XBee16BitAddress
 from digi.xbee.models.message import XBeeMessage
@@ -100,7 +103,7 @@ def decode_data(data: str) -> Dict:
     s = data.split(",")
 
     return {"id": int(s[0]), "timestamp": s[1],"date": s[2], "time": s[3], "close": int(s[4]), "count": int(s[5]), 
-            'rssi_avg':float(s[6]),'rssi_std':float(s[7]),'rssi_min':int(s[8]),'rssi_max':int(s[9])}
+            'rssi_avg':float(s[6]),'rssi_std':float(s[7]),'rssi_min':int(s[8]),'rssi_max':int(s[9]), 'latitude': float(s[10]), 'longitude': float(s[11])}
 
 
 
@@ -214,6 +217,24 @@ class ZigbeeStorage:
         old_format = util.format_datetime_old(timestamp)
 
         params = {'id':id, 'timestamp': time_format, 'date':date,'time':old_format, 'close':summary[2],'count':summary[3],
-                                    'rssi_avg':summary[4],'rssi_std':summary[5],'rssi_min':summary[6],'rssi_max':summary[7]}
+                                    'rssi_avg':summary[4],'rssi_std':summary[5],'rssi_min':summary[6],'rssi_max':summary[7], 
+                                    'latitude': Config.latitude, 'longitude': Config.longitude}
 
         self.com.encode_and_send(params)
+
+
+def auto_find_port():
+    ports = serial.tools.list_ports.comports()
+
+    possibles = []
+
+    for port in ports:
+        if port.manufacturer == "FTDI" and port.product == "FT231X USB UART":
+            possibles.append(port.device)
+
+    if len(possibles) == 0:
+        logger.warn("No port automatically detected. Return default /dev/ttyUSB0")
+        return "/dev/ttyUSB0"
+    if len(possibles) > 1:
+        logger.warn(f"zigbee port is ambigeous. [{','.join(possibles)}]")
+    return possibles[0]

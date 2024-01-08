@@ -10,6 +10,7 @@ import logging
 import datetime
 import util
 import traceback
+import config
 
 import json
 
@@ -42,7 +43,8 @@ class Upstream:
         
 
         params = {'id':id,'timestamp': time_format,'date':date,'time':old_format.replace(':', ''),'close':summary[2],'count':summary[3],
-                                    'rssi_avg':summary[4],'rssi_std':summary[5],'rssi_min':summary[6],'rssi_max':summary[7]}
+                                    'rssi_avg':summary[4],'rssi_std':summary[5],'rssi_min':summary[6],'rssi_max':summary[7],
+                                    'latitude': config.Config.latitude, 'longitude': config.Config.longitude}
 
         logger.debug("sending message to %s: %s", self.com.url, params)
 
@@ -74,8 +76,9 @@ class InternetCommunicator:
                 if response.status_code != 200:
                     logger.error(f"Error sending message to upstream url -- {response}")
                     sleep(2)
-            except:
+            except Exception as e:
                 logger.error("No internet. try reconnecting")
+                logger.error("Exception catched: %s", e)
                 self._wait_for_internet()
 
     def _wait_for_internet(self):
@@ -84,8 +87,10 @@ class InternetCommunicator:
             try:
                 response = requests.get(self.url, timeout=5)
                 code = response.status_code
-            except:
+                logger.info(f"response code of {self.url}: {code}")
+            except Exception as e:
                 logger.info("no internet connection. Retry connecting in 5 seconds")
+                logger.debug(f"returned exception: {e}")
             finally:
                 sleep(5)
         logger.info("internet connection succeeded")

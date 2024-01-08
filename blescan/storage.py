@@ -45,12 +45,12 @@ class Storage:
 
     def setup_beacon(self):
         filename = f"{self.filename_base}_beacon.csv"
-        self.setup_file(filename, "Time,Tag Name,Staying time, Average RSSI")
+        self.setup_file(filename, "Time,Tag Name,Staying time, Average RSSI, Latitude, Longitude")
         self.files['beacon'] = filename
 
     def setup_summary(self):
         filename = f"{self.filename_base}_summary.csv"
-        self.setup_file(filename, "DeviceID,Time,Close count,Total count,Avg RSSI,Std RSSI,Min RSSI,Max RSSI")
+        self.setup_file(filename, "DeviceID,Time,Close count,Total count,Avg RSSI,Std RSSI,Min RSSI,Max RSSI, Latitude, Longitude")
         self.files['summary'] = filename
 
 
@@ -136,7 +136,7 @@ def prepare_row_data_summary(id: int, time: str, rssi: List, close_threshold: in
     mini = min(rssi)
     maxi = max(rssi)
 
-    return [id, time, close, count, avg, st, mini, maxi]
+    return [id, time, close, count, avg, st, mini, maxi, config.Config.latitude, config.Config.longitude]
 
 def prepare_row_data_beacon(timestr, rssi_list, manufacturer_data):
     average_rssi = mean(rssi_list)
@@ -144,4 +144,4 @@ def prepare_row_data_beacon(timestr, rssi_list, manufacturer_data):
 
     tagname = ''.join([manufacturer_data['major'], manufacturer_data['minor']])
 
-    return [timestr, tagname, time, average_rssi]
+    return [timestr, tagname, time, average_rssi, config.Config.latitude, config.Config.longitude]

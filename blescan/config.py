@@ -10,6 +10,10 @@ class Config:
     inifile = None
     serial_number = None
 
+    use_location = False
+    longitude = "null"
+    latitude = "null"
+
     class Counting:
         rssi_threshold = -100
         rssi_close_threshold = rssi_threshold
@@ -111,6 +115,18 @@ def _parse_beacon_settings(inifile):
     Config.Beacon.threshold = int(section.get('threshold', 3))
     Config.Beacon.storage += _get_storage_paths(inifile, section,'storage')
 
+def _parse_user_settings(inifile):
+    logger.debug("parsing user config")
+    section = inifile['USER']
+
+    Config.serial_number = int(section.get('devID', 0))
+
+    location = section.get('location', '0').split(",")
+    Config.use_location = len(location) == 2
+    if Config.use_location:
+        Config.latitude = float(location[0].strip())
+        Config.longitude = float(location[1].strip())
+
 
 def parse_ini(path='config.ini'):
     """
@@ -123,8 +139,7 @@ def parse_ini(path='config.ini'):
 
     Config.inifile = inifile
 
-    Config.serial_number = int(inifile['USER']['devID'])
-
+    _parse_user_settings(inifile)
     _parse_counting_settings(inifile)
     _parse_zigbee_settings(inifile)
     _parse_beacon_settings(inifile)

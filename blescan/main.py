@@ -21,7 +21,7 @@ from config import Config, parse_ini
 
 from network import InternetCommunicator, Upstream
 
-from xbee import XBeeCommunication, XBee, get_configuration, decode_data, ZigbeeStorage
+from xbee import XBeeCommunication, XBee, get_configuration, decode_data, ZigbeeStorage, auto_find_port
 
 comm = LEDCommunicator()
 internet = InternetCommunicator(Config.Counting.internet_url)
@@ -91,7 +91,11 @@ def print_zigbee_message(sender, text):
 
 
 def setup_zigbee():
-    logger.debug("Setting up zigbee")
+    logger.info("Setting up zigbee")
+
+    if Config.Zigbee.port == "auto":
+        Config.Zigbee.port = auto_find_port()
+
     device = XBee(Config.Zigbee.port)
 
     conf = get_configuration(1, Config.Zigbee.is_coordinator, Config.Zigbee.my_label)
