@@ -11,8 +11,8 @@ class Config:
     serial_number = None
 
     use_location = False
-    longitude = "null"
-    latitude = "null"
+    longitude = None
+    latitude = None
 
     class Counting:
         rssi_threshold = -100

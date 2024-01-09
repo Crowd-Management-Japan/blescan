@@ -104,8 +104,8 @@ def decode_data(data: str) -> Dict[str, Any]:
 
     return {"id": int(s[0]), "timestamp": s[1],"date": s[2], "time": s[3], "close": int(s[4]), "count": int(s[5]), 
             'rssi_avg':float(s[6]),'rssi_std':float(s[7]),'rssi_min':int(s[8]),'rssi_max':int(s[9]), 
-            'latitude': util.float_or_else(s[10], "null"), 
-            'longitude': util.float_or_else(s[11], "null")}
+            'latitude': util.float_or_else(s[10], None), 
+            'longitude': util.float_or_else(s[11], None)}
 
 
 
