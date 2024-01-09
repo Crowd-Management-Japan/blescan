@@ -1,7 +1,7 @@
 import asyncio
 from config import Config
 
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Any
 from queue import Queue
 from threading import Thread
 
@@ -84,7 +84,7 @@ class XBee:
 
 
 
-def get_configuration(pan_id=1, is_coordinator=False, label=' '):
+def get_configuration(pan_id=1, is_coordinator=False, label=' ') -> str:
     params = {'ID': pan_id.to_bytes(8, 'little'), 'CE': (1 if is_coordinator else 0).to_bytes(1, 'little'), 'NI': bytearray(label, "utf8")}
 
     return params
@@ -96,14 +96,16 @@ def encode_data(data: Dict) -> str:
     """
     return ",".join([str(v) for v in data.values()])
 
-def decode_data(data: str) -> Dict:
+def decode_data(data: str) -> Dict[str, Any]:
     """decode data that was encoded with the function above
     """
 
     s = data.split(",")
 
     return {"id": int(s[0]), "timestamp": s[1],"date": s[2], "time": s[3], "close": int(s[4]), "count": int(s[5]), 
-            'rssi_avg':float(s[6]),'rssi_std':float(s[7]),'rssi_min':int(s[8]),'rssi_max':int(s[9]), 'latitude': util.float_or_None(s[10]), 'longitude': util.float_or_None(s[11])}
+            'rssi_avg':float(s[6]),'rssi_std':float(s[7]),'rssi_min':int(s[8]),'rssi_max':int(s[9]), 
+            'latitude': util.float_or_else(s[10], "null"), 
+            'longitude': util.float_or_else(s[11], "null")}
 
 
 
