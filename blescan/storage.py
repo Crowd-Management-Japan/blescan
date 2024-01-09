@@ -131,10 +131,16 @@ def prepare_row_data_rssi(id, time, rssi_list):
 def prepare_row_data_summary(id: int, time: str, rssi: List, close_threshold: int):
     count = len(rssi)
     close = len([_ for _ in rssi if _ > close_threshold])
-    st = std(rssi)
-    avg = mean(rssi)
-    mini = min(rssi)
-    maxi = max(rssi)
+    st = 0
+    avg = 0
+    mini = 0
+    maxi = 0
+    
+    if count > 0:
+        st = std(rssi)
+        avg = mean(rssi)
+        mini = min(rssi)
+        maxi = max(rssi)
 
     return [id, time, close, count, avg, st, mini, maxi, config.Config.latitude, config.Config.longitude]
 
