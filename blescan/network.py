@@ -66,14 +66,17 @@ class InternetCommunicator:
         self.send_queue.put(data)
         logger.debug("enqueued message, size %d", self.send_queue.unfinished_tasks)
 
-    def _send_message(self, data: Dict):
+    def _send_message(self, data: Dict) -> bool:
         logger.debug("sending message")
         code = 0
-        while code != 200:
+        success = False
+        while code != 200 and self.running:
             try:
                 response = requests.post(self.url, json=data, timeout=5)
                 code = response.status_code
-                if response.status_code != 200:
+                if response.status_code == 200:
+                    success = True
+                else:
                     logger.error(f"Error sending message to upstream url -- {response}")
                     sleep(2)
             except Exception as e:
@@ -81,9 +84,11 @@ class InternetCommunicator:
                 logger.error("Exception catched: %s", e)
                 self._wait_for_internet()
 
+        return success
+
     def _wait_for_internet(self):
         code = 0
-        while code != 200:
+        while code != 200 and self.running:
             try:
                 response = requests.get(self.url, timeout=5)
                 code = response.status_code
@@ -101,9 +106,12 @@ class InternetCommunicator:
                 if self.send_queue.unfinished_tasks > 0:
                     task = self.send_queue.get()
 
-                    self._send_message(task)
+                    success = self._send_message(task)
 
-                    self.send_queue.task_done()
+                    if success or not self.running:
+                        self.send_queue.task_done()
+                        if not success:
+                            logger.warn("Could not send request before exiting due to connection error")
 
                     logger.debug(f"message sent to upstream. Remaining in queue: {self.send_queue.unfinished_tasks}")
                 else:
@@ -129,7 +137,7 @@ class InternetCommunicator:
         logger.info("--- shutting down Network thread ---")
         if self.running == False:
             return
-        self.send_queue.join()
         self.running = False
+        self.send_queue.join()
         self.thread.join()
-        logger.info("done")
+        logger.info("--- Network thread shut down ---")
