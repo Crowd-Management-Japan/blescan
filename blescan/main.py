@@ -67,12 +67,14 @@ async def main(config_path: str='./config.ini'):
             after = datetime.now()
             logging.debug(f"processing took {after - before}")
     except KeyboardInterrupt as e:
-        logger.error("stopping application")
-    finally:
-        comm.stop()
-        xbee.stop()
-        internet.stop()
+        logger.info("--- STOP COMMAND RECEIVED ---")
 
+
+def shutdown_blescan():
+    logger.info("--- stopping daemons ---")
+    comm.stop()
+    xbee.stop()
+    internet.stop()
 
 def setup_internet():
     logger.debug("Setting up internet")
@@ -84,7 +86,7 @@ def setup_internet():
 
     internet.start_thread()
 
-def print_zigbee_message(sender, text):
+def receive_zigbee_message(sender, text):
     logger.debug(f"received message from zigbee {sender}")
     decoded = decode_data(text)
     internet.enqueue_send_message(decoded)
@@ -109,12 +111,14 @@ def setup_zigbee():
 
     if Config.Zigbee.my_label in Config.Zigbee.internet_ids:
         logger.info("Setting up zigbee as receiver")
-        device.add_receive_callback(print_zigbee_message)
+        device.add_receive_callback(receive_zigbee_message)
     else:
         logger.info("Setting up zigbee as sender")
         stor = ZigbeeStorage(xbee)
         Config.Counting.storage.append(stor)
         xbee.start_sending_thread()
+
+
 
 if __name__ == "__main__":
 
@@ -123,4 +127,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         config_path = sys.argv[1]
 
-    asyncio.run(main(config_path))
+    try:
+        asyncio.run(main(config_path))
+    except KeyboardInterrupt:
+        shutdown_blescan()

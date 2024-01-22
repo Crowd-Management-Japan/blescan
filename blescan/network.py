@@ -98,10 +98,11 @@ class InternetCommunicator:
                 logger.debug(f"returned exception: {e}")
             finally:
                 sleep(5)
-        logger.info("internet connection succeeded")
+        if self.running:
+            logger.info("internet connection succeeded")
 
     def _sending_thread(self):
-        while self.running:
+        while self.running or self.send_queue.unfinished_tasks > 0:
             try: 
                 if self.send_queue.unfinished_tasks > 0:
                     task = self.send_queue.get()
@@ -110,10 +111,12 @@ class InternetCommunicator:
 
                     if success or not self.running:
                         self.send_queue.task_done()
-                        if not success:
-                            logger.warn("Could not send request before exiting due to connection error")
 
-                    logger.debug(f"message sent to upstream. Remaining in queue: {self.send_queue.unfinished_tasks}")
+                    if success:
+                        logger.debug(f"message sent to upstream. Remaining in queue: {self.send_queue.unfinished_tasks}")
+                    else:
+                        logger.warn("Could not send request before exiting due to connection error")
+                    
                 else:
                     sleep(1)
             except Exception as e:

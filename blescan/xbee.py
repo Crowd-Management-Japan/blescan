@@ -81,7 +81,8 @@ class XBee:
             time.sleep(5)
             return False
         
-
+    def close(self):
+        self.device.close()
 
 
 def get_configuration(pan_id=1, is_coordinator=False, label=' ') -> str:
@@ -141,6 +142,7 @@ class XBeeCommunication:
             self.queue.task_done()
         self.queue.put(data)
 
+
     def start_sending_thread(self):
         if self.running:
             raise RuntimeError("Sending thread already started")
@@ -148,26 +150,31 @@ class XBeeCommunication:
             raise ValueError("No targets specified")
         if self.sender is None:
             raise ValueError("No sender device specified")
+
+        logger.info("--- starting Xbee thread ---")
         
         self.running = True
         self.thread = Thread(target=self._blocking_sending_loop, daemon=True)
         self.thread.start()
 
-    def _send_data(self, data: str):
+    def _send_data(self, data: str) -> bool:
         target = self.targets.queue[0]
         first = target
 
-        while not self.sender.send_to_device(target, data):
-            logger.debug(f"cannot reach target {target}")
-            target = self.targets.get()
-            self.targets.put(target)
-            target = self.targets.queue[0]
+        success = False
 
-            if target == first:
-                logger.warn(f"no target nodes reachable. Try again in 2s")
-                time.sleep(2)
+        while self.running:
+            success = self.sender.send_to_device(target, data)
+            if not success:
+                logger.debug(f"cannot reach target {target}")
+                target = self.targets.get()
+                self.targets.put(target)
+                target = self.targets.queue[0]
 
-        
+                if target == first:
+                    logger.warn(f"no target nodes reachable. Try again in 2s")
+                    time.sleep(2)
+        return success
 
     def _blocking_sending_loop(self):
         while self.running:
@@ -186,20 +193,22 @@ class XBeeCommunication:
                     logger.warn(f"zigbee queue is not getting done. Size: {self.queue.unfinished_tasks}")
             except Exception as e:
                 logger.error(f"uncaught exception")
-                logger.error(traceback.format_exc())
+                logger.error(traceback.format_exc(e))
                 time.sleep(5)
         logger.info("zigbee thread finished")
 
     def stop(self):
+        logger.info("--- Shutting down Zigbee thread ---")
         if self.running == False:
             return
 
-        logger.info("--- Shutting down Zigbee thread ---")
-        self.queue.join()
         self.running = False
+        self.queue.join()
+        logger.debug("queue joined")
         self.thread.join()
+        logger.debug("thread joined")
         self.sender.device.close()
-        logger.info("done")
+        logger.info("--- Zigbee thread shut down ---")
     
 
 class ZigbeeStorage:
