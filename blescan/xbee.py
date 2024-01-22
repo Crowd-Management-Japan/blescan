@@ -150,8 +150,7 @@ class XBeeCommunication:
             raise ValueError("No sender device specified")
         
         self.running = True
-        self.thread = Thread(target=self._blocking_sending_loop)
-        self.thread.daemon = True
+        self.thread = Thread(target=self._blocking_sending_loop, daemon=True)
         self.thread.start()
 
     def _send_data(self, data: str):

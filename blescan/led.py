@@ -89,8 +89,7 @@ class LEDCommunicator:
         
         self.running = True
 
-        self.thread = threading.Thread(target=self.blink_blocking)
-        self.thread.daemon = True
+        self.thread = threading.Thread(target=self.blink_blocking, daemon=True)
         self.thread.start()
         logger.info("done")
 
