@@ -3,6 +3,7 @@ from device import Device
 from storage import Storage
 from numpy import mean
 from datetime import datetime
+import config
 
 import logging
 
@@ -94,6 +95,9 @@ class BleBeacon:
 
         filtered = self.filter_devices(devices)
 
+        if self.check_shutdown(filtered):
+            logger.debug("SHUTDOWN DETECTED")
+
         self.update(filtered)
         acc = self.accumulate()
 
@@ -107,6 +111,17 @@ class BleBeacon:
 
     def __str__(self) -> str:
         return self.name
+
+    def check_shutdown(self, devices: List[Device]) -> bool:
+        if config.Config.Beacon.shutdown_id == None or (not config.Config.Beacon.shutdown_on_scan):
+            return False
+        
+        mm_string = lambda dev: f"{dev.get_major()}{dev.get_minor()}"
+
+        mm_strings = [mm_string(dev) for dev in devices]
+        logger.debug(f"looking for {config.Config.Beacon.shutdown_id} in mm_strings: {mm_strings} ")
+
+        return config.Config.Beacon.shutdown_id in mm_strings
 
     def store_devices(self, macs):
         """store results into all given storage instances"""

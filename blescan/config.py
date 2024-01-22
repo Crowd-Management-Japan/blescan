@@ -36,6 +36,8 @@ class Config:
         scans = 8
         threshold = 3
         storage = []
+        shutdown_on_scan = False
+        shutdown_id = None
 
     @staticmethod
     def check_integrity():
@@ -114,6 +116,10 @@ def _parse_beacon_settings(inifile):
     Config.Beacon.scans = int(section.get('scans', 8))
     Config.Beacon.threshold = int(section.get('threshold', 3))
     Config.Beacon.storage += _get_storage_paths(inifile, section,'storage')
+
+    Config.Beacon.shutdown_id = section.get('shutdown_on_target', None)
+    if Config.Beacon.shutdown_id:
+        Config.Beacon.shutdown_on_scan = True
 
 def _parse_user_settings(inifile):
     logger.debug("parsing user config")
