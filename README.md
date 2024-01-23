@@ -54,7 +54,7 @@ The setup process is more focused on working with this backend.
 
 ## single raspberry 
 Clone the repository to the raspberry.
-When using the productive version, run the `etc/install_scriptsh`. It will also install a service and add it to autostart.  
+When using the productive version, run the `etc/install_script.sh`. It will also install a service and add it to autostart.  
 
 Doing manually:
 - (optional) create python environment
@@ -69,6 +69,11 @@ When using multiple raspi's it might be good to have a look at the [blescan-back
 With the backend the installation process is much easier. First, install the backend.
 Then, inside the raspberry just run `curl <ip:port>/setup/install_<id> > install.sh` where id is the id of the raspberry used (needed when uploading the data later, just choose a number).
 This will download a script with the full setup and installation.
+After a reboot the software will start automatically in the background. Check with `sudo systemctl status blescan.service`.
+
+Tip:
+If you setup a static IP (for example in `/etc/dhcpcd.conf`) you can use the endpoint `/setup/install_ip` to automatically detect the device id by the last two digits of the IP address.
+Note, that this only works when running the backend in the local network.
 
 ### Running
 When running the backend, you should not run `blescan/main.py` directly. Instead run `./etc/start.sh`. It will start a wrapper first, that communicates with the backend, downloads the latest config and then starts blescan based on this config.
