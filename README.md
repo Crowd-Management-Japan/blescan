@@ -66,7 +66,7 @@ Doing manually:
 When using multiple raspi's it might be good to have a look at the [blescan-backend](https://github.com/Crowd-Management-Japan/blescan-backend).
 
 ### Installation
-With the backend the installation process is much easier. First, install the backend.
+With the backend the installation process is much easier. First, install the backend and make sure that it is set up correctly (look that the install_script uses the correct ip-address of the server).
 Then, inside the raspberry just run `curl <ip:port>/setup/install_<id> > install.sh` where id is the id of the raspberry used (needed when uploading the data later, just choose a number).
 This will download a script with the full setup and installation.
 After a reboot the software will start automatically in the background. Check with `sudo systemctl status blescan.service`.
