@@ -71,7 +71,7 @@ async def main(config_path: str='./config.ini'):
 
         beacon.process_scan(devices)
         after = datetime.now()
-        logger.debug(f"processing took {after - before}")
+        #logger.debug(f"processing took {after - before}")
 
         if beacon.stop_call:
             logger.info("Shutdown beacon scanned. Shutting down blescan.")
