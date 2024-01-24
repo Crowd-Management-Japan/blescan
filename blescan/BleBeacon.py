@@ -97,13 +97,7 @@ class BleBeacon:
 
         filtered = self.filter_devices(devices)
 
-        logger.debug(f"filtered beacon count: {len(filtered)}")
-        for d in filtered:
-            logger.debug(d)
-
         if self.check_shutdown(filtered):
-            #main.exit_and_shutdown()
-            logger.debug("STOP CALL RECEIVED")
             self.stop_call = True
 
         self.update(filtered)
