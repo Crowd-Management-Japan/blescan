@@ -19,6 +19,8 @@ class BleBeacon:
     For example we do 8 1s scans. If a beacon is detected more than 4 times, it is considered present in this area.
     """
 
+    stop_call = False
+
     def __init__(self, beacon_id: str = '', scans: int = 8, threshold: int = 5, storage:Union[Storage, List[Storage]] = []):
         """
         Construct an instance of the Beacon Analysis.
@@ -95,8 +97,14 @@ class BleBeacon:
 
         filtered = self.filter_devices(devices)
 
+        logger.debug(f"filtered beacon count: {len(filtered)}")
+        for d in filtered:
+            logger.debug(d)
+
         if self.check_shutdown(filtered):
-            logger.debug("SHUTDOWN DETECTED")
+            #main.exit_and_shutdown()
+            logger.debug("STOP CALL RECEIVED")
+            self.stop_call = True
 
         self.update(filtered)
         acc = self.accumulate()
@@ -119,7 +127,6 @@ class BleBeacon:
         mm_string = lambda dev: f"{dev.get_major()}{dev.get_minor()}"
 
         mm_strings = [mm_string(dev) for dev in devices]
-        logger.debug(f"looking for {config.Config.Beacon.shutdown_id} in mm_strings: {mm_strings} ")
 
         return config.Config.Beacon.shutdown_id in mm_strings
 

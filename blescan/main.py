@@ -11,7 +11,7 @@ logger = logging.getLogger('blescan')
 
 from scanning import Scanner
 from BleCount import BleCount
-from BleBeacon import BleBeacon
+import BleBeacon
 from storage import Storage
 from led import LEDCommunicator
 from datetime import datetime
@@ -27,6 +27,11 @@ comm = LEDCommunicator()
 internet = InternetCommunicator(Config.Counting.internet_url)
 xbee = XBeeCommunication()
 
+RUNNING = True
+
+PROGRAM_EXIT_CODE = 0
+
+CODE_SHUTDOWN_DEVICE = 100
 
 async def main(config_path: str='./config.ini'):
     parse_ini(config_path)
@@ -43,7 +48,7 @@ async def main(config_path: str='./config.ini'):
     beacon_target = Config.Beacon.target_id
     beacon_scans = Config.Beacon.scans
     beacon_threshold = Config.Beacon.threshold
-    beacon = BleBeacon(beacon_target,beacon_scans, beacon_threshold, beacon_storage)
+    beacon = BleBeacon.BleBeacon(beacon_target,beacon_scans, beacon_threshold, beacon_storage)
 
     # setting up counting functionality
     counting_storage = Config.Counting.storage
@@ -56,18 +61,21 @@ async def main(config_path: str='./config.ini'):
 
     logger.info("--- Startup complete. Begin scanning ---")
 
-    try:
-        while True:
-            devices = await scanner.scan()
+    global RUNNING
+    while RUNNING:
+        devices = await scanner.scan()
 
-            before = datetime.now()
-            await counter.process_scan(devices)
+        before = datetime.now()
+        await counter.process_scan(devices)
 
-            beacon.process_scan(devices)
-            after = datetime.now()
-            logging.debug(f"processing took {after - before}")
-    except KeyboardInterrupt as e:
-        logger.info("--- STOP COMMAND RECEIVED ---")
+        beacon.process_scan(devices)
+        after = datetime.now()
+        logger.debug(f"processing took {after - before}")
+
+        if beacon.stop_call:
+            exit_and_shutdown()
+
+    logger.debug("======= while exited")
 
 
 def shutdown_blescan():
@@ -119,6 +127,13 @@ def setup_zigbee():
         xbee.start_sending_thread()
 
 
+def exit_and_shutdown():
+    global RUNNING
+    global PROGRAM_EXIT_CODE
+    RUNNING = False
+    PROGRAM_EXIT_CODE = CODE_SHUTDOWN_DEVICE
+    logger.info("--- preparing exit with system shutdown ---")
+
 
 if __name__ == "__main__":
 
@@ -130,4 +145,9 @@ if __name__ == "__main__":
     try:
         asyncio.run(main(config_path))
     except KeyboardInterrupt:
-        shutdown_blescan()
+        pass
+
+    logger.info("--- shutting down blescan ---")
+    shutdown_blescan()
+    
+    sys.exit(PROGRAM_EXIT_CODE)
