@@ -11,7 +11,7 @@ logger = logging.getLogger('blescan')
 
 from scanning import Scanner
 from BleCount import BleCount
-import BleBeacon
+from BleBeacon import BleBeacon
 from storage import Storage
 from led import LEDCommunicator
 from datetime import datetime
@@ -45,7 +45,7 @@ async def main(config_path: str='./config.ini'):
     beacon_target = Config.Beacon.target_id
     beacon_scans = Config.Beacon.scans
     beacon_threshold = Config.Beacon.threshold
-    beacon = BleBeacon.BleBeacon(beacon_target,beacon_scans, beacon_threshold, beacon_storage)
+    beacon = BleBeacon(beacon_target,beacon_scans, beacon_threshold, beacon_storage)
 
     # setting up counting functionality
     counting_storage = Config.Counting.storage
