@@ -36,3 +36,12 @@ else
     echo starting blescan with default config
     python -u blescan/main.py $BLESCAN_FALLBACK_CONFIG
 fi
+
+exitcode=$?
+
+echo blescan exit_code: $exitcode
+
+if [ $exitcode -eq 100 ]
+then
+    sudo shutdown -h now
+fi

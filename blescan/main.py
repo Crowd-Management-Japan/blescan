@@ -28,6 +28,8 @@ internet = InternetCommunicator(Config.Counting.internet_url)
 xbee = XBeeCommunication()
 
 
+CODE_SHUTDOWN_DEVICE = 100
+
 async def main(config_path: str='./config.ini'):
     parse_ini(config_path)
     #comm.start_in_thread()
@@ -54,20 +56,29 @@ async def main(config_path: str='./config.ini'):
 
     scanner = Scanner()
 
+
+    exit_code = 0
+    running = True
+
     logger.info("--- Startup complete. Begin scanning ---")
 
-    try:
-        while True:
-            devices = await scanner.scan()
 
-            before = datetime.now()
-            await counter.process_scan(devices)
+    while running:
+        devices = await scanner.scan()
 
-            beacon.process_scan(devices)
-            after = datetime.now()
-            logging.debug(f"processing took {after - before}")
-    except KeyboardInterrupt as e:
-        logger.info("--- STOP COMMAND RECEIVED ---")
+        before = datetime.now()
+        await counter.process_scan(devices)
+
+        beacon.process_scan(devices)
+        after = datetime.now()
+        #logger.debug(f"processing took {after - before}")
+
+        if beacon.stop_call:
+            logger.info("Shutdown beacon scanned. Shutting down blescan.")
+            running = False
+            exit_code = CODE_SHUTDOWN_DEVICE
+
+    return exit_code
 
 
 def shutdown_blescan():
@@ -119,7 +130,6 @@ def setup_zigbee():
         xbee.start_sending_thread()
 
 
-
 if __name__ == "__main__":
 
     config_path = './config.ini'
@@ -127,7 +137,14 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         config_path = sys.argv[1]
 
+    exit_code = 1
+
     try:
-        asyncio.run(main(config_path))
+        exit_code = asyncio.run(main(config_path))
     except KeyboardInterrupt:
-        shutdown_blescan()
+        pass
+
+    logger.info("--- shutting down blescan ---")
+    shutdown_blescan()
+    
+    sys.exit(exit_code)

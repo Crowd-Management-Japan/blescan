@@ -3,6 +3,7 @@ from device import Device
 from storage import Storage
 from numpy import mean
 from datetime import datetime
+import config
 
 import logging
 
@@ -17,6 +18,8 @@ class BleBeacon:
     For every completed round of scans, a threshold determines wether a beacon is considered close or not.
     For example we do 8 1s scans. If a beacon is detected more than 4 times, it is considered present in this area.
     """
+
+    stop_call = False
 
     def __init__(self, beacon_id: str = '', scans: int = 8, threshold: int = 5, storage:Union[Storage, List[Storage]] = []):
         """
@@ -94,6 +97,9 @@ class BleBeacon:
 
         filtered = self.filter_devices(devices)
 
+        if self.check_shutdown(filtered):
+            self.stop_call = True
+
         self.update(filtered)
         acc = self.accumulate()
 
@@ -107,6 +113,16 @@ class BleBeacon:
 
     def __str__(self) -> str:
         return self.name
+
+    def check_shutdown(self, devices: List[Device]) -> bool:
+        if config.Config.Beacon.shutdown_id == None or (not config.Config.Beacon.shutdown_on_scan):
+            return False
+        
+        mm_string = lambda dev: f"{dev.get_major()}{dev.get_minor()}"
+
+        mm_strings = [mm_string(dev) for dev in devices]
+
+        return config.Config.Beacon.shutdown_id in mm_strings
 
     def store_devices(self, macs):
         """store results into all given storage instances"""
