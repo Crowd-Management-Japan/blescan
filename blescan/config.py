@@ -102,7 +102,7 @@ def _parse_zigbee_settings(inifile):
     if not Config.Zigbee.use_zigbee:
         return
     
-    Config.Zigbee.pan = int(section.get('pan', '1'))
+    Config.Zigbee.pan = int(section.get('pan', '99'))
     
     Config.Zigbee.port = section.get('port', '/dev/ttyUSB0')
     Config.Zigbee.baud_rate = int(section.get('baud_rate', 9600))
