@@ -111,7 +111,7 @@ def setup_zigbee():
 
     device = XBee(Config.Zigbee.port)
 
-    conf = get_configuration(1, Config.Zigbee.is_coordinator, Config.Zigbee.my_label)
+    conf = get_configuration(Config.Zigbee.pan, Config.Zigbee.is_coordinator, Config.Zigbee.my_label)
 
     device.configure(conf)
 

@@ -26,6 +26,8 @@ class Config:
         use_zigbee = False
         internet_ids = []
 
+        pan = 1
+
         port = "/dev/ttyUSB0"
         baud_rate = 9600
         is_coordinator = True
@@ -99,6 +101,8 @@ def _parse_zigbee_settings(inifile):
     Config.Zigbee.use_zigbee = bool(int(section.get('use_zigbee', '0')))
     if not Config.Zigbee.use_zigbee:
         return
+    
+    Config.Zigbee.pan = int(section.get('pan', '1'))
     
     Config.Zigbee.port = section.get('port', '/dev/ttyUSB0')
     Config.Zigbee.baud_rate = int(section.get('baud_rate', 9600))
