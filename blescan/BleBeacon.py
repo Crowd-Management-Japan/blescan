@@ -1,7 +1,6 @@
 from typing import Dict, List, Union
 from device import Device
 from storage import Storage
-from numpy import mean
 from datetime import datetime
 import config
 

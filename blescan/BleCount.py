@@ -3,7 +3,6 @@ from device import Device
 from datetime import datetime
 from collections import namedtuple
 from storage import Storage
-from numpy import std, mean
 
 import config
 import logging
