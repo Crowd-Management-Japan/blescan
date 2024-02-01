@@ -165,16 +165,17 @@ class XBeeCommunication:
 
         while self.running:
             success = self.sender.send_to_device(target, data)
-            if not success:
-                logger.debug(f"cannot reach target {target}")
-                target = self.targets.get()
-                self.targets.put(target)
-                target = self.targets.queue[0]
+            if success:
+                return success
+            logger.debug(f"cannot reach target {target}")
+            target = self.targets.get()
+            self.targets.put(target)
+            target = self.targets.queue[0]
 
-                if target == first:
-                    logger.warn(f"no target nodes reachable. Try again in 2s")
-                    time.sleep(2)
-        return success
+            if target == first:
+                logger.warn(f"no target nodes reachable. Try again in 2s")
+                time.sleep(2)
+        return False
 
     def _blocking_sending_loop(self):
         while self.running:
