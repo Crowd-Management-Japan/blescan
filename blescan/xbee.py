@@ -227,7 +227,7 @@ class ZigbeeStorage:
         time_format = util.format_datetime_network(timestamp)
         old_format = util.format_datetime_old(timestamp)
 
-        params = {'id':id, 'timestamp': time_format, 'date':date,'time':old_format, 'close':summary[2],'count':summary[3],
+        params = {'id':id, 'timestamp': time_format, 'date':date,'time':old_format.replace(':', ''), 'close':summary[2],'count':summary[3],
                                     'rssi_avg':summary[4],'rssi_std':summary[5],'rssi_min':summary[6],'rssi_max':summary[7], 
                                     'latitude': Config.latitude, 'longitude': Config.longitude}
 
