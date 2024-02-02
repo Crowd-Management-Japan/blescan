@@ -48,6 +48,10 @@ def is_different_id():
     return wrapper != blescan
 
 def is_update_needed():
+    if Config.do_not_update:
+        logging.info("Ignoring update due to config")
+        return False
+
     request = requests.get(get_url("setup/last_updated/{}"), timeout=5)
     remote_timestamp = request.json()['last_changed']
 
