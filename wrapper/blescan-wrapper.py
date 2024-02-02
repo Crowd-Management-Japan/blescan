@@ -22,7 +22,7 @@ def main():
             logging.info("config is up-to-date")
             
         # give callback that this device is ready to use
-        requests.post(get_url("setup/completed_{}"))
+        requests.post(get_url("setup/completed_{}"), timeout=5)
 
     except requests.RequestException:
         logging.info("No internet connection, starting with existing config")
