@@ -22,7 +22,7 @@ def main():
             logging.info("config is up-to-date")
             
         # give callback that this device is ready to use
-        requests.post(get_url("setup/completed_{}"))
+        requests.post(get_url("setup/completed_{}"), timeout=5)
 
     except requests.RequestException:
         logging.info("No internet connection, starting with existing config")
@@ -48,6 +48,10 @@ def is_different_id():
     return wrapper != blescan
 
 def is_update_needed():
+    if Config.do_not_update:
+        logging.info("Ignoring update due to config")
+        return False
+
     request = requests.get(get_url("setup/last_updated/{}"), timeout=5)
     remote_timestamp = request.json()['last_changed']
 

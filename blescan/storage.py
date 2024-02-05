@@ -4,7 +4,7 @@ import datetime
 import os
 import csv
 import config
-from numpy import std, mean
+from statistics import pstdev, mean
 import logging 
 from typing import List
 import util
@@ -137,7 +137,7 @@ def prepare_row_data_summary(id: int, time: str, rssi: List, close_threshold: in
     maxi = None
     
     if count > 0:
-        st = std(rssi)
+        st = pstdev(rssi)
         avg = mean(rssi)
         mini = min(rssi)
         maxi = max(rssi)

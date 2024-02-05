@@ -5,6 +5,7 @@ class Config:
 
     id = 0
     url = ''
+    do_not_update = 0
 
 def read_config(path='./config.ini'):
     logging.debug(f"Parsing ini file {path}")
@@ -15,6 +16,8 @@ def read_config(path='./config.ini'):
 
     Config.id = section.get('devID')
     Config.url = section.get('url')
+
+    Config.do_not_update = int(section.get('ignore_config_update', '0')) == 1
 
     logging.debug("parsing complete")
 
