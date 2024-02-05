@@ -10,23 +10,31 @@ git pull origin master
 
 source .venv/bin/activate
 
-leds=(led0 led1)
+# led0 = green, led1 = red
+ledGreen='/sys/class/leds/led0'
+ledRed='/sys/class/leds/led1'
+leds=($ledGreed $ledRed)
 
 for led in ${leds[@]}
 do
-    echo changing permission for "/sys/class/leds/$led/"
-    sudo chgrp led "/sys/class/leds/$led/trigger"
-    sudo chgrp led "/sys/class/leds/$led/brightness"
-    sudo chmod g+w /sys/class/leds/$led/trigger
-    sudo chmod g+w /sys/class/leds/$led/brightness
-    sudo echo 1 > /sys/class/leds/$led/brightness
+    echo changing permission for $led
+    sudo chmod a+rw $led/trigger
+    sudo chmod a+rw $led/brightness
+
+    echo default-on > $led/trigger
 done
 
+sleep 1
 
 echo starting wrapper program...
 
+echo heartbeat > $ledGreen/trigger
+echo heartbeat > $ledRed/trigger
+
 # -u for unbuffered output to see it in systemctl status
 python -u wrapper/blescan-wrapper.py $WRAPPER_CONFIG_PATH $BLESCAN_CONFIG_PATH
+
+echo input > $ledRed/trigger
 
 if [ $? -eq 0 ]
 then
@@ -36,6 +44,12 @@ else
     echo starting blescan with default config
     python -u blescan/main.py $BLESCAN_FALLBACK_CONFIG
 fi
+
+sleep 0.5
+
+echo none > $ledGreen/trigger
+echo default-on > $ledRed/trigger
+echo 1 > $ledRed/brightness
 
 exitcode=$?
 

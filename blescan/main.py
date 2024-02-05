@@ -13,7 +13,7 @@ from scanning import Scanner
 from BleCount import BleCount
 from BleBeacon import BleBeacon
 from storage import Storage
-from led import LEDCommunicator
+from led import LEDCommunicator, LEDState
 from datetime import datetime
 
 import sys
@@ -22,6 +22,8 @@ from config import Config, parse_ini
 from network import InternetCommunicator, Upstream
 
 from xbee import XBeeCommunication, XBee, get_configuration, decode_data, ZigbeeStorage, auto_find_port
+
+import time
 
 comm = LEDCommunicator()
 internet = InternetCommunicator(Config.Counting.internet_url)
@@ -32,7 +34,7 @@ CODE_SHUTDOWN_DEVICE = 100
 
 async def main(config_path: str='./config.ini'):
     parse_ini(config_path)
-    #comm.start_in_thread()
+    comm.start_in_thread()
 
     if Config.Counting.use_internet:
         setup_internet()
@@ -62,6 +64,7 @@ async def main(config_path: str='./config.ini'):
 
     logger.info("--- Startup complete. Begin scanning ---")
 
+    comm.disable_state(LEDState.SETUP)
 
     while running:
         devices = await scanner.scan()
