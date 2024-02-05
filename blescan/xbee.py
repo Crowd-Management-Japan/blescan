@@ -14,6 +14,8 @@ import traceback
 
 import serial.tools.list_ports
 
+from led import LEDState
+
 
 from digi.xbee.devices import XBeeDevice
 from digi.xbee.models.address import XBee16BitAddress
@@ -22,6 +24,7 @@ from digi.xbee.exception import TransmitException,XBeeException,TimeoutException
 
 logger = logging.getLogger('blescan.XBee')
 
+ZIGBEE_STACKING_THRESHOLD = 3
 
 class XBee:
 
@@ -112,12 +115,13 @@ def decode_data(data: str) -> Dict[str, Any]:
 
 class XBeeCommunication:
 
-    def __init__(self, sender: XBee=None):
+    def __init__(self, sender: XBee=None, led_communicator = None):
         self.sender = sender
         self.queue = Queue()
         self.running = False
         self.targets = Queue()
         self._max_size = 100
+        self.led_communicator = led_communicator
 
     def __del__(self):
         self.stop()
@@ -164,10 +168,14 @@ class XBeeCommunication:
         success = False
 
         while self.running:
+            logger.debug(f"unfinished zigbee tasks: {self.queue.unfinished_tasks}")
+            self.set_led_state(LEDState.ZIGBEE_STACKING, self.queue.unfinished_tasks > ZIGBEE_STACKING_THRESHOLD)
             success = self.sender.send_to_device(target, data)
             if success:
+                self.set_led_state(LEDState.NO_ZIGBEE_CONNECTION, False)
                 return success
             logger.debug(f"cannot reach target {target}")
+            self.set_led_state(LEDState.NO_ZIGBEE_CONNECTION, True)
             target = self.targets.get()
             self.targets.put(target)
             target = self.targets.queue[0]
@@ -175,6 +183,8 @@ class XBeeCommunication:
             if target == first:
                 logger.warn(f"no target nodes reachable. Try again in 2s")
                 time.sleep(2)
+            else:
+                time.sleep(0.5)
         return False
 
     def _blocking_sending_loop(self):
@@ -187,8 +197,8 @@ class XBeeCommunication:
 
                     logger.debug(f"Data sent to node {self.targets.queue[0]}")
                     self.queue.task_done()
-                else:
-                    time.sleep(2)
+
+                time.sleep(1)
 
                 if self.queue.unfinished_tasks >= 10:
                     logger.warn(f"zigbee queue is not getting done. Size: {self.queue.unfinished_tasks}")
@@ -204,12 +214,22 @@ class XBeeCommunication:
             return
 
         self.running = False
-        self.queue.join()
         logger.debug("queue joined")
         self.thread.join()
         logger.debug("thread joined")
         self.sender.device.close()
         logger.info("--- Zigbee thread shut down ---")
+
+    def set_led_state(self, state: LEDState, value: bool):
+        if not self.led_communicator:
+            return
+        
+        logger.debug("setting zigbee comm value")
+
+        if value:
+            self.led_communicator.enable_state(state)
+        else:
+            self.led_communicator.disable_state(state)
     
 
 class ZigbeeStorage:

@@ -26,8 +26,8 @@ from xbee import XBeeCommunication, XBee, get_configuration, decode_data, Zigbee
 import time
 
 comm = LEDCommunicator()
-internet = InternetCommunicator(Config.Counting.internet_url)
-xbee = XBeeCommunication()
+internet = None
+xbee = XBeeCommunication(led_communicator=comm)
 
 
 CODE_SHUTDOWN_DEVICE = 100
@@ -86,14 +86,17 @@ async def main(config_path: str='./config.ini'):
 
 def shutdown_blescan():
     logger.info("--- stopping daemons ---")
-    comm.stop()
-    xbee.stop()
-    internet.stop()
+    if comm:
+        comm.stop()
+    if xbee:
+        xbee.stop()
+    if internet:
+        internet.stop()
 
 def setup_internet():
     logger.debug("Setting up internet")
     global internet
-    internet = InternetCommunicator(Config.Counting.internet_url)
+    internet = InternetCommunicator(Config.Counting.internet_url, comm)
 
     up = Upstream(internet)
     Config.Counting.storage.append(up)

@@ -11,12 +11,15 @@ import datetime
 import util
 import traceback
 import config
+from led import LEDState
 
 import json
 
 logger = logging.getLogger('blescan.Network')
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+INTERNET_STACKING_THRESHOLD = 3
 
 class Upstream:
 
@@ -53,11 +56,12 @@ class Upstream:
 
 class InternetCommunicator:
 
-    def __init__(self, url):
+    def __init__(self, url, led_communicator = None):
         self.url = url
         self.send_queue = Queue()
         self._max_queue_size = 100
         self.running = False
+        self.led_communicator = led_communicator
 
     def enqueue_send_message(self, data: Dict):
         if self.send_queue.unfinished_tasks >= self._max_queue_size:
@@ -88,8 +92,11 @@ class InternetCommunicator:
 
     def _wait_for_internet(self):
         code = 0
+        self.set_led_status(LEDState.NO_INTERNET_CONNECTION, True)
         while code != 200 and self.running:
             try:
+                if self.send_queue.unfinished_tasks > INTERNET_STACKING_THRESHOLD:
+                    self.set_led_status(LEDState.INTERNET_STACKING, True)
                 response = requests.get(self.url, timeout=5)
                 code = response.status_code
                 logger.info(f"response code of {self.url}: {code}")
@@ -100,11 +107,15 @@ class InternetCommunicator:
                 sleep(5)
         if self.running:
             logger.info("internet connection succeeded")
+        
+        self.set_led_status(LEDState.NO_INTERNET_CONNECTION, False)
 
     def _sending_thread(self):
         while self.running or self.send_queue.unfinished_tasks > 0:
             try: 
                 if self.send_queue.unfinished_tasks > 0:
+                    if self.send_queue.unfinished_tasks <= INTERNET_STACKING_THRESHOLD:
+                        self.set_led_status(LEDState.INTERNET_STACKING, False)
                     task = self.send_queue.get()
 
                     success = self._send_message(task)
@@ -144,3 +155,12 @@ class InternetCommunicator:
         self.send_queue.join()
         self.thread.join()
         logger.info("--- Network thread shut down ---")
+
+    def set_led_status(self, state: LEDState, value: bool):
+        if not self.led_communicator:
+            return
+        
+        if value:
+            self.led_communicator.enable_state(state)
+        else:
+            self.led_communicator.disable_state(state)

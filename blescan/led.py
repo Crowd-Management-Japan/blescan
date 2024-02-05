@@ -57,23 +57,72 @@ def LED_RUNNING(green: LED, red: LED):
     green.off()
     sleep(1)
 
+def _LED_FAST(led:LED):
+    led.on()
+    sleep(.25)
+    led.off()
+    sleep(.25)
+    
+def _LED_SLOW(led:LED):
+    led.on()
+    sleep(.75)
+    led.off()
+    sleep(.75)
+
 def LED_GREEN_FAST(green: LED, red: LED):
+    _LED_FAST(green)
+
+def LED_GREEN_SLOW(green: LED, red: LED):
+    _LED_SLOW(green)
+
+def LED_RED_FAST(green: LED, red: LED):
+    _LED_FAST(red)
+
+def LED_RED_SLOW(green: LED, red: LED):
+    _LED_SLOW(red)
+
+def LED_BOTH_FAST(green: LED, red: LED):
+    green.on()
+    red.on()
+    sleep(.25)
+    green.off()
+    red.off()
+    sleep(.25)
+
+def LED_BOTH_SLOW(green: LED, red: LED):
+    green.on()
+    red.on()
+    sleep(.75)
+    green.off()
+    red.off()
+    sleep(.75)
+
+def LED_GF_RS(green: LED, red: LED):
+    red.on()
+    green.on()
+    sleep(.25)
+    green.off()
+    sleep(.25)
+    green.on()
+    sleep(.25)
+    green.off()
+    red.off()
+    sleep(.25)
     green.on()
     sleep(.25)
     green.off()
     sleep(.25)
 
-def LED_GREEN_SLOW(green: LED, red: LED):
-    green.on()
-    sleep(.75)
-    green.off()
-    sleep(.75)
+def LED_GS_RF(green: LED, red: LED):
+    LED_GF_RS(red, green)
 
 
 class LEDState(IntEnum):
     INTERNET_STACKING = 1
     ZIGBEE_STACKING = 2
     SETUP = 4
+    NO_INTERNET_CONNECTION = 8
+    NO_ZIGBEE_CONNECTION = 16
 
 
 def get_led_function(state) -> lambda g,r:None :
@@ -83,18 +132,30 @@ def get_led_function(state) -> lambda g,r:None :
     for state in enabled:
         sum += state
 
-    logger.debug(f"choosing led function for value {sum}")
 
     if sum == 0:
         return LED_RUNNING
-    if sum == 1:
-        return LED_GREEN_FAST
-    if sum == 2:
-        return LED_GREEN_SLOW
-    if sum == 3: 
-        return LED_ERROR
-    if sum == 4: 
+    
+    if LEDState.SETUP in enabled:
+        # ignore other errors when still in setup
         return LED_SETUP
+
+    if sum in [1, 9]:
+        return LED_GREEN_FAST
+    if sum in [2, 18]:
+        return LED_RED_FAST
+    if sum in [3, 11, 19]:
+        return LED_BOTH_FAST
+    if sum == 8:
+        return LED_GREEN_SLOW
+    if sum == 16: 
+        return LED_RED_SLOW
+    if sum == 24: 
+        return LED_BOTH_SLOW
+    if sum in [10, 26]:
+        return LED_GS_RF
+    if sum in [17, 25]: 
+        return LED_GF_RS
     
     return LED_ERROR
 
@@ -139,7 +200,6 @@ class LEDCommunicator:
 
         self.thread = threading.Thread(target=self.blink_blocking, daemon=True)
         self.thread.start()
-        logger.info("done")
 
     def enable_state(self, state):
         if self._states.get(state, False):
