@@ -13,13 +13,13 @@ source .venv/bin/activate
 # led0 = green, led1 = red
 ledGreen='/sys/class/leds/led0'
 ledRed='/sys/class/leds/led1'
-leds=($ledGreed $ledRed)
+leds=($ledGreen $ledRed)
 
 for led in ${leds[@]}
 do
     echo changing permission for $led
-    sudo chmod a+rw $led/trigger
-    sudo chmod a+rw $led/brightness
+    sudo chmod 666 $led/trigger
+    sudo chmod 666 $led/brightness
 
     echo default-on > $led/trigger
 done
