@@ -24,7 +24,8 @@ from digi.xbee.exception import TransmitException,XBeeException,TimeoutException
 
 logger = logging.getLogger('blescan.XBee')
 
-ZIGBEE_STACKING_THRESHOLD = 3
+XBEE_STACKING_THRESHOLD = 3
+XBEE_QUEUE_SIZE = 1000
 
 class XBee:
 
@@ -120,7 +121,7 @@ class XBeeCommunication:
         self.queue = Queue()
         self.running = False
         self.targets = Queue()
-        self._max_size = 100
+        self._max_size = XBEE_QUEUE_SIZE
         self.led_communicator = led_communicator
 
     def __del__(self):
@@ -169,7 +170,7 @@ class XBeeCommunication:
 
         while self.running:
             logger.debug(f"unfinished zigbee tasks: {self.queue.unfinished_tasks}")
-            self.set_led_state(LEDState.ZIGBEE_STACKING, self.queue.unfinished_tasks > ZIGBEE_STACKING_THRESHOLD)
+            self.set_led_state(LEDState.ZIGBEE_STACKING, self.queue.unfinished_tasks > XBEE_STACKING_THRESHOLD)
             success = self.sender.send_to_device(target, data)
             if success:
                 self.set_led_state(LEDState.NO_ZIGBEE_CONNECTION, False)

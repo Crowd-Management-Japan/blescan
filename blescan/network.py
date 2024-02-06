@@ -20,6 +20,7 @@ logger = logging.getLogger('blescan.Network')
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 INTERNET_STACKING_THRESHOLD = 3
+INTERNET_QUEUE_SIZE = 1000
 
 class Upstream:
 
@@ -59,7 +60,7 @@ class InternetCommunicator:
     def __init__(self, url, led_communicator = None):
         self.url = url
         self.send_queue = Queue()
-        self._max_queue_size = 100
+        self._max_queue_size = INTERNET_QUEUE_SIZE
         self.running = False
         self.led_communicator = led_communicator
 
