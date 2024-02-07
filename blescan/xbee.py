@@ -71,7 +71,7 @@ def auto_find_port():
 
 class XBeeController:
 
-    def __init__(self, port='auto'):
+    def __init__(self, port='auto', led_communicator=None):
         self.port: str = port
         self.device: XBeeDevice
         self.target_ids: List[str] = []
@@ -82,12 +82,14 @@ class XBeeController:
         self.thread = None
         self.ready = False
         self.is_sender: bool = None
+        self.led_communicator = led_communicator
 
     def __del__(self):
         if self.device is not None and self.device.is_open():
             self.device.close()
 
     def _setup(self):
+        self._set_state(LEDState.XBEE_SETUP, True)
         port = self.port
         logger.debug(f"port: {port}")
         if port == 'auto': port = auto_find_port()
@@ -112,6 +114,7 @@ class XBeeController:
                      NI: {self.device.get_node_id()}]")
         logger.debug(f"device using protocol {self.device.get_protocol()}")
         logger.debug(f"device setup completed")
+        self._set_state(LEDState.XBEE_SETUP, False)
 
     def _teardown(self):
         if self.device is not None and self.device.is_open():
@@ -150,12 +153,14 @@ class XBeeController:
 
                 logger.debug("tearing down xbee")
             except Exception as e:
+                self._set_state(LEDState.XBEE_CRASH, True)
                 logger.error("XBee thread crashed with exception - trying to restart in 5s")
                 
                 logger.error(e)
                 logger.debug("end of error message")
                 time.sleep(10)
                 logger.debug("restarting xbee thread")
+                self._set_state(LEDState.XBEE_CRASH, False)
             finally:
                 self._teardown()
         logger.info("--- xbee thread finished ---")
@@ -181,10 +186,15 @@ class XBeeController:
 
         while self.running:
             if len(available_targets) == 0:
+                self._set_state(LEDState.NO_XBEE_CONNECTION, True)
                 logger.debug("No reachable targets. Rescanning")
                 available_targets = self._discover_network()
                 logger.debug(f"available internet nodes: {available_targets}")
                 continue
+            else:
+                self._set_state(LEDState.NO_XBEE_CONNECTION, False)
+
+            self._set_state(LEDState.XBEE_STACKING, self.message_queue.unfinished_tasks > XBEE_STACKING_THRESHOLD)
 
             # if there is a message, send it to an available target.
             # if the target happens to not be available (_send_message return false),
@@ -235,7 +245,9 @@ class XBeeController:
         xnet.start_discovery_process(True, 1)
 
         while xnet.is_discovery_running():
-            time.sleep(1)
+            if not self.running:
+                xnet.stop_discovery_process()
+            time.sleep(.5)
 
         nodes = xnet.get_devices()
         logger.debug(f"found nodes: [{','.join(map(str, nodes))}]")
@@ -266,6 +278,12 @@ class XBeeController:
 
         logger.debug(f"Message sent to {target}")
         return True
+    
+    def _set_state(self, state: LEDState, value: bool):
+        if self.led_communicator is None:
+            return
+        
+        self.led_communicator.set_state(state, value)
     
 
 class XBeeStorage:

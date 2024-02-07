@@ -28,7 +28,7 @@ import time
 
 comm = LEDCommunicator()
 internet = None
-xbee = XBeeController()
+xbee = XBeeController(led_communicator=comm)
 
 
 CODE_SHUTDOWN_DEVICE = 100
