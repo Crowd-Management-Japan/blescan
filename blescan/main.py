@@ -15,6 +15,7 @@ from BleBeacon import BleBeacon
 from storage import Storage
 from led import LEDCommunicator, LEDState
 from datetime import datetime
+import util
 
 import sys
 from config import Config, parse_ini
@@ -121,7 +122,7 @@ def setup_zigbee():
 
     device.configure(conf)
 
-    logger.info(f"Zigbee: port {Config.Zigbee.port} - configuration: {conf}")
+    logger.info(f"Zigbee: port {Config.Zigbee.port} - configuration: {dict(conf, ID=util.byte_to_hex(conf['ID']), CE=util.byte_to_hex(conf['CE']))}")
 
     xbee.set_sender(device)
     xbee.add_targets(Config.Zigbee.internet_ids)

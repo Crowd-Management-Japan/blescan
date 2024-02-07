@@ -89,7 +89,7 @@ class XBee:
         self.device.close()
 
 
-def get_configuration(pan_id=1, is_coordinator=False, label=' ') -> str:
+def get_configuration(pan_id=1, is_coordinator=False, label=' ') -> Dict:
     params = {'ID': pan_id.to_bytes(8, 'little'), 'CE': (1 if is_coordinator else 0).to_bytes(1, 'little'), 'NI': bytearray(label, "utf8")}
 
     return params

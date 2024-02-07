@@ -22,3 +22,6 @@ def float_or_else(value: str, default: Any = None) -> Union[float,Any]:
     except ValueError:
         return default
     
+def byte_to_hex(byte_array) -> str:
+    return ''.join('{:02x}'.format(_) for _ in byte_array)
+    
