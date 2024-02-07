@@ -73,7 +73,7 @@ class XBeeController:
 
     def __init__(self, port='auto', led_communicator=None):
         self.port: str = port
-        self.device: XBeeDevice
+        self.device: XBeeDevice = None
         self.target_ids: List[str] = []
         self.targets: Dict = {}
         self.message_received_callback = lambda s, t: logger.debug(f"message from {t}: {s}")
@@ -135,6 +135,8 @@ class XBeeController:
         time.sleep(1)
 
     def stop(self):
+        if not self.running:
+            return
         logger.debug("xbee stop call")
         self.running = False
         self.thread.join()
@@ -228,7 +230,7 @@ class XBeeController:
             self.message_queue.task_done
         self.message_queue.put(message)
         
-        logger.debug(f"adding message to queue. size: {self.message_queue.unfinished_tasks}")
+        logger.debug(f"adding message to xbee queue. size: {self.message_queue.unfinished_tasks}")
 
     def _discover_network(self, timeout=10) -> List[str]:
         """
