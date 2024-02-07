@@ -207,16 +207,25 @@ class XBeeController:
                 success = self._send_message(target, message)
 
                 if success:
-                    self.message_queue.task_done
+                    self.message_queue.task_done()
                     message = None
                 else:
                     available_targets.remove(target)
 
             elif self.message_queue.unfinished_tasks > 0:
                 message = self.message_queue.get()
-        
-        # end while
 
+        # end while
+        
+        logger.debug("stopping xbee. Clearing queue")
+        if len(available_targets) > 0:
+            while self.message_queue.unfinished_tasks > 0:
+                target = available_targets[0]
+                message = self.message_queue.get()
+                self._send_message(target, message)
+                self.message_queue.task_done()
+
+        logger.debug("xbee thread finished")
 
 
 
@@ -227,7 +236,7 @@ class XBeeController:
         if self.message_queue.unfinished_tasks >= XBEE_QUEUE_SIZE:
             logger.warn("xbee queue full. Dropping old data")
             self.message_queue.get()
-            self.message_queue.task_done
+            self.message_queue.task_done()
         self.message_queue.put(message)
         
         logger.debug(f"adding message to xbee queue. size: {self.message_queue.unfinished_tasks}")
