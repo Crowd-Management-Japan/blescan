@@ -1,4 +1,5 @@
 import configparser
+from typing import List
 
 import storage
 import logging
@@ -7,39 +8,39 @@ logger = logging.getLogger('blescan.config')
 
 class Config:
 
-    inifile = None
-    serial_number = None
+    inifile: configparser.ConfigParser = None
+    serial_number: int = None
 
-    use_location = False
-    longitude = None
-    latitude = None
+    use_location: bool = False
+    longitude: float = None
+    latitude: float = None
 
     class Counting:
-        rssi_threshold = -100
-        rssi_close_threshold = rssi_threshold
-        delta = 10
-        storage = []
-        use_internet = False
-        internet_url = None
+        rssi_threshold: int = -100
+        rssi_close_threshold: int = rssi_threshold
+        delta: int = 10
+        storage: List = []
+        use_internet: bool = False
+        internet_url: str = None
 
     class Zigbee:
-        use_zigbee = False
-        internet_ids = []
+        use_zigbee: bool = False
+        internet_ids: List[str] = []
 
-        pan = 1
+        pan: int = 1
 
-        port = "/dev/ttyUSB0"
-        baud_rate = 9600
-        is_coordinator = True
-        my_label = "42_C"
+        port: str = "/dev/ttyUSB0"
+        baud_rate: int = 9600
+        is_coordinator: bool = True
+        my_label: str = " "
 
     class Beacon:
-        target_id = ''
-        scans = 8
-        threshold = 3
-        storage = []
-        shutdown_on_scan = False
-        shutdown_id = None
+        target_id: str = ''
+        scans: int = 8
+        threshold: int = 3
+        storage: List = []
+        shutdown_on_scan: bool = False
+        shutdown_id: str = None
 
     @staticmethod
     def check_integrity():
