@@ -22,6 +22,16 @@ INTERNET_STACKING_THRESHOLD = 3
 INTERNET_QUEUE_SIZE = 1000
 
 class InternetController:
+    """
+    The internet controller manages the internet connection.
+    It can be started in a separated thread by calling the `start()`-method.
+    After doing this, messages can be enqueue by calling `enqueue_message(message)`.
+    These messages will get sent to the specified `url` endpoint.
+    When also given a LEDCommunicator, this instance will give information about its current state.
+
+    Stop the thread by calling `stop()`. This will terminate the loop safely, with trying to send all
+    enqueued messages before exiting.
+    """
 
     def __init__(self, url='', led_communicator:LEDCommunicator=None):
         self.url:str = url
@@ -38,6 +48,9 @@ class InternetController:
         self.led_communicator = communicator
 
     def start(self):
+        """
+        Start a thread as a daemon. Only has effect, if the instance is not running yet.
+        """
         if self.running:
             logger.error("Internet thread already running")
         self.running = True
@@ -47,6 +60,9 @@ class InternetController:
         self.thread.start()
 
     def stop(self):
+        """
+        Stop the thread and terminate safely. Try to send remaining messages before exiting
+        """
         if not self.running:
             return
         logger.debug("internet thread stop call")
@@ -55,18 +71,25 @@ class InternetController:
         logger.info("--- Internet thread shut down ---")
 
     def enqueue_message(self, message: str):
+        """
+        Enqueue a message to be sent.
+        If the Queue is already full, older data will be dropped to add this message
+        """
         if self.message_queue.unfinished_tasks >= INTERNET_QUEUE_SIZE:
             logger.warn("internet queue full. Dropping old data")
             self.message_queue.get()
-            self.message_queue.task_done
+            self.message_queue.task_done()
         self.message_queue.put(message)
         
         logger.debug(f"adding message to internet queue. size: {self.message_queue.unfinished_tasks}")
 
     def _run(self):
+        """
+        Private method that is actually executed as a thread.
+        """
         message = None
         while self.running:
-            
+
             self._set_state(LEDState.INTERNET_STACKING, self.message_queue.unfinished_tasks > INTERNET_STACKING_THRESHOLD)
 
             if message is not None:
@@ -74,24 +97,36 @@ class InternetController:
                 logger.debug(f"internet sending success: {success} ")
                 if success:
                     self._set_state(LEDState.NO_INTERNET_CONNECTION, False)
-                    self.message_queue.task_done
-                    self.message = None
+                    self.message_queue.task_done()
+                    message = None
                 else:
                     self._set_state(LEDState.NO_INTERNET_CONNECTION, True)
-                    sleep(5)
+                    sleep(2)
 
             elif self.message_queue.unfinished_tasks > 0:
+                logger.debug(f"retrieving next internet message")
                 message = self.message_queue.get()
 
+        logger.debug("internet thread stopping safely. Send remaining messages")
+        while self.message_queue.unfinished_tasks > 0:
+            logger.debug(f"internet remaining: {self.message_queue.unfinished_tasks}")
+            message = self.message_queue.get()
+            self._send_message(message, timeout=0.5)
+            self.message_queue.task_done()
 
         # end while
         logger.debug("internet thread finished")
             
 
-    def _send_message(self, message: Dict) -> bool:
+    def _send_message(self, message: Dict, timeout=5) -> bool:
+        """
+        Try to send a single message to the upstream.
+        Return true if sending process was successfull.
+        """
+        logger.debug("sending internet message...")
         success = False
         try:
-            response = requests.post(self.url, json=message, timeout=5)
+            response = requests.post(self.url, json=message, timeout=timeout)
             code = response.status_code
             success = (code == 200)
         except Exception as e:

@@ -203,7 +203,7 @@ class LEDCommunicator:
             self._states[state] = value
             return
         
-        logger.debug(f"changing led state {state} to {value})")
+        logger.debug(f"changing led state {state} to {value}")
         
         self._states[state] = value
         self._state_changed = True
