@@ -22,7 +22,7 @@ from config import Config, parse_ini
 
 from network import InternetCommunicator, Upstream
 
-from xbee import decode_data, ZigbeeStorage, XBeeController
+from xbee import decode_data, XBeeStorage, XBeeController
 
 import time
 
@@ -40,8 +40,8 @@ async def main(config_path: str='./config.ini'):
     if Config.Counting.use_internet:
         setup_internet()
 
-    if Config.Zigbee.use_zigbee:
-        setup_zigbee()
+    if Config.XBee.use_xbee:
+        setup_xbee()
 
     # setting up beacon functionality
     beacon_storage = Config.Beacon.storage
@@ -104,23 +104,23 @@ def setup_internet():
 
     internet.start_thread()
 
-def receive_zigbee_message(sender, text):
+def receive_xbee_message(sender, text):
     decoded = decode_data(text)
-    logger.debug(f"received message from zigbee {sender}, decoded: {decoded}")
+    logger.debug(f"received message from xbee {sender}, decoded: {decoded}")
     internet.enqueue_send_message(decoded)
 
 
-def setup_zigbee():
+def setup_xbee():
     logger.info("Setting up xbee")
     xbee.start()
     
     if xbee.is_sender:
         logger.debug("appending xbee storage")
-        stor = ZigbeeStorage(xbee)
+        stor = XBeeStorage(xbee)
         Config.Counting.storage.append(stor)
     else:
         logger.debug("setting message callback")
-        xbee.set_message_received_callback(receive_zigbee_message)
+        xbee.set_message_received_callback(receive_xbee_message)
 
 
 if __name__ == "__main__":

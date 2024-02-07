@@ -119,10 +119,10 @@ def LED_GS_RF(green: LED, red: LED):
 
 class LEDState(IntEnum):
     INTERNET_STACKING = 1
-    ZIGBEE_STACKING = 2
+    XBEE_STACKING = 2
     SETUP = 4
     NO_INTERNET_CONNECTION = 8
-    NO_ZIGBEE_CONNECTION = 16
+    NO_XBEE_CONNECTION = 16
 
 
 def get_led_function(state) -> lambda g,r:None :

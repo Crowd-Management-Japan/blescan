@@ -63,7 +63,7 @@ def auto_find_port():
         logger.warn("No port automatically detected. Return default /dev/ttyUSB0")
         return "/dev/ttyUSB0"
     if len(possibles) > 1:
-        logger.warn(f"zigbee port is ambigeous. [{','.join(possibles)}]")
+        logger.warn(f"xbee port is ambigeous. [{','.join(possibles)}]")
     return possibles[0]
 
 
@@ -91,15 +91,15 @@ class XBeeController:
         port = self.port
         logger.debug(f"port: {port}")
         if port == 'auto': port = auto_find_port()
-        self.target_ids = Config.Zigbee.internet_ids
+        self.target_ids = Config.XBee.internet_ids
 
         logger.debug(f"setting up xbee device on port {port}")
-        self.device = XBeeDevice(port, Config.Zigbee.baud_rate)
+        self.device = XBeeDevice(port, Config.XBee.baud_rate)
         self.device.open()
 
-        self.device.set_pan_id(Config.Zigbee.pan.to_bytes(8, 'little'))
-        self.device.set_node_id(Config.Zigbee.my_label)
-        self.device.set_parameter('CE', (1 if Config.Zigbee.is_coordinator else 0).to_bytes(1, 'little'))
+        self.device.set_pan_id(Config.XBee.pan.to_bytes(8, 'little'))
+        self.device.set_node_id(Config.XBee.my_label)
+        self.device.set_parameter('CE', (1 if Config.XBee.is_coordinator else 0).to_bytes(1, 'little'))
 
         self.device.apply_changes()
         self.device.write_changes()
@@ -141,7 +141,7 @@ class XBeeController:
             try:
                 self._setup()
                 
-                if Config.Zigbee.my_label in self.target_ids:
+                if Config.XBee.my_label in self.target_ids:
                     logger.info("Running XBee as Receiver")
                     self._run_receiver()
                 else:
@@ -268,7 +268,7 @@ class XBeeController:
         return True
     
 
-class ZigbeeStorage:
+class XBeeStorage:
 
     def __init__(self, com):
         self.com = com
