@@ -105,7 +105,7 @@ def setup_internet():
 def receive_xbee_message(sender, text):
     decoded = decode_data(text)
     logger.debug(f"received message from xbee {sender}, decoded: {decoded}")
-    internet.enqueue_send_message(decoded)
+    internet.enqueue_message(decoded)
 
 
 def setup_xbee():
