@@ -99,7 +99,7 @@ def _parse_counting_settings(inifile):
 
 def _parse_xbee_settings(inifile):
     section = inifile["ZIGBEE"]
-    Config.XBee.use_xbee = bool(int(section.get('use_xbee', '0')))
+    Config.XBee.use_xbee = bool(int(section.get('use_zigbee', '0')))
     if not Config.XBee.use_xbee:
         return
     
