@@ -22,13 +22,15 @@ from config import Config, parse_ini
 
 from network import InternetCommunicator, Upstream
 
-from xbee import XBeeCommunication, XBee, get_configuration, decode_data, ZigbeeStorage, auto_find_port
+from xbee import XBeeCommunication, XBee, get_configuration, decode_data, ZigbeeStorage, auto_find_port, XBeeController
 
 import time
 
 comm = LEDCommunicator()
 internet = None
 xbee = XBeeCommunication(led_communicator=comm)
+
+controller = XBeeController(Config.Zigbee.port)
 
 
 CODE_SHUTDOWN_DEVICE = 100
@@ -94,6 +96,8 @@ def shutdown_blescan():
     if internet:
         internet.stop()
 
+    controller.stop()
+
 def setup_internet():
     logger.debug("Setting up internet")
     global internet
@@ -105,13 +109,24 @@ def setup_internet():
     internet.start_thread()
 
 def receive_zigbee_message(sender, text):
-    logger.debug(f"received message from zigbee {sender}")
     decoded = decode_data(text)
+    logger.debug(f"received message from zigbee {sender}, decoded: {decoded}")
     internet.enqueue_send_message(decoded)
 
 
 def setup_zigbee():
-    logger.info("Setting up zigbee")
+    logger.info("Setting up xbee")
+    controller.start()
+    
+    if controller.is_sender:
+        logger.debug("appending xbee storage")
+        stor = ZigbeeStorage(controller)
+        Config.Counting.storage.append(stor)
+    else:
+        logger.debug("setting message callback")
+        controller.set_message_received_callback(receive_zigbee_message)
+
+    return 
 
     if Config.Zigbee.port == "auto":
         Config.Zigbee.port = auto_find_port()
@@ -134,7 +149,7 @@ def setup_zigbee():
         logger.info("Setting up zigbee as sender")
         stor = ZigbeeStorage(xbee)
         Config.Counting.storage.append(stor)
-        xbee.start_sending_thread()
+        xbee.start_in_thread()
 
 
 if __name__ == "__main__":
