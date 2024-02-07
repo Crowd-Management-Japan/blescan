@@ -193,23 +193,17 @@ class LEDCommunicator:
         self.thread.start()
 
     def enable_state(self, state):
-        if self._states.get(state, False):
-            return
-        self._states[state] = True
-        self._state_changed = True
+        self.set_state(state, True)
 
     def disable_state(self, state):
-        if not self._states.get(state, False):
-            return
-        self._states[state] = False
-        self._state_changed = True
+        self.set_state(state, False)
 
     def set_state(self, state, value):
         if self._states.get(state, False) == value:
-            self._states[state] = False
+            self._states[state] = value
             return
         
-        logger.debug(f"changing led state {state} to {value}")
+        logger.debug(f"changing led state {state} to {value})")
         
         self._states[state] = value
         self._state_changed = True

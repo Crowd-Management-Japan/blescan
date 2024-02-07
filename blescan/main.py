@@ -20,14 +20,14 @@ import util
 import sys
 from config import Config, parse_ini
 
-from network import InternetCommunicator, Upstream
+from network import InternetStorage, InternetController
 
 from xbee import decode_data, XBeeStorage, XBeeController
 
 import time
 
 comm = LEDCommunicator()
-internet = None
+internet = InternetController(led_communicator=comm)
 xbee = XBeeController(led_communicator=comm)
 
 
@@ -87,22 +87,20 @@ async def main(config_path: str='./config.ini'):
 
 def shutdown_blescan():
     logger.info("--- stopping daemons ---")
-    if comm:
-        comm.stop()
-    if internet:
-        internet.stop()
-
+    internet.stop()
     xbee.stop()
+    
+    comm.stop()
 
 def setup_internet():
     logger.debug("Setting up internet")
-    global internet
-    internet = InternetCommunicator(Config.Counting.internet_url, comm)
 
-    up = Upstream(internet)
+    internet.set_url(Config.Counting.internet_url)
+
+    up = InternetStorage(internet)
     Config.Counting.storage.append(up)
 
-    internet.start_thread()
+    internet.start()
 
 def receive_xbee_message(sender, text):
     decoded = decode_data(text)
