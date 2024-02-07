@@ -29,7 +29,7 @@ class Config:
 
         pan: int = 1
 
-        port: str = "/dev/ttyUSB0"
+        port: str = "auto"
         baud_rate: int = 9600
         is_coordinator: bool = True
         my_label: str = " "

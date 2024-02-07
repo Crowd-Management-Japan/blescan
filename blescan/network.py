@@ -16,6 +16,7 @@ from led import LEDState
 import json
 
 logger = logging.getLogger('blescan.Network')
+logger.setLevel(logging.ERROR)
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 

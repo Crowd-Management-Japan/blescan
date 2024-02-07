@@ -27,100 +27,6 @@ logger = logging.getLogger('blescan.XBee')
 XBEE_STACKING_THRESHOLD = 3
 XBEE_QUEUE_SIZE = 1000
 
-class XBee:
-
-    def __init__(self, port):
-        self.device = XBeeDevice(port, Config.Zigbee.baud_rate)
-        self.device.open()
-        self.device.add_data_received_callback(self._message_received)
-        self.callbacks = []
-        self.targets = []
-        self.remotes = {}
-
-    def __del__(self):
-        self.device.close()
-
-    def _message_received(self, xbee_message: XBeeMessage):
-        for callback in self.callbacks:
-            callback(xbee_message.remote_device, xbee_message.data.decode())
-
-    def configure(self, params:Dict[str,bytearray]):
-        for k,v in params.items():
-            self.device.set_parameter(k, v)
-
-        self.device.write_changes()
-
-        # re-open to see changes
-        self.device.close()
-        self.device.open()
-
-    def add_receive_callback(self, callback: lambda device, text: None):
-        self.callbacks.append(callback)
-
-    def get_param(self, name: str) -> bytearray:
-        return self.device.get_parameter(name)
-    
-    def get_pan_id(self) -> int:
-        pan = self.get_param("ID")
-        return int.from_bytes(pan)
-    
-    def is_coordinator(self) -> bool:
-        con = self.get_param("CE")
-        return con == b'\x01'
-
-    def get_label(self) -> str:
-        return self.get_param("NI").decode()
-    
-    def set_target_nodes(self, targets: Union[str, List[str]]) -> None:
-        """
-        Specify a list of target devices by their NI
-        """
-        if type(targets) is not list: targets = [targets]
-        self.targets = targets
-
-    
-    def discover_targets(self) -> None:
-        """
-        Discover nodes in this networks and save them for connecting later
-        """
-
-        logger.debug("discovering remotes...")
-
-        xnet = self.device.get_network()
-
-        xnet.start_discovery_process()
-        while xnet.is_discovery_running():
-            time.sleep(0.5)
-
-        logger.debug(f"discovered remotes: [{','.join(map(str, discovered))}]")
-
-        pass
-    
-    def send_to_device(self, node_identifier: str, data: str) -> bool:
-
-        if node_identifier not in self.targets:
-            self.set_target_nodes(self.targets.append(node_identifier))
-            self.discover_targets()
-
-        net = self.device.get_network()
-        remote = net.discover_device(node_identifier)
-        if remote is None:
-            return False
-        try:
-            self.device.send_data(remote, data)
-            return True
-        except TransmitException:
-            logger.error(f"Error sending to node {node_identifier}")
-            return False
-        except TimeoutException:
-            logger.error(f"Timeout during connection. Try again in 5s")
-            time.sleep(5)
-            return False
-        
-    def close(self):
-        self.device.close()
-
-
 def get_configuration(pan_id=1, is_coordinator=False, label=' ') -> Dict:
     params = {'ID': pan_id.to_bytes(8, 'little'), 'CE': (1 if is_coordinator else 0).to_bytes(1, 'little'), 'NI': bytearray(label, "utf8")}
 
@@ -144,130 +50,28 @@ def decode_data(data: str) -> Dict[str, Any]:
             'latitude': util.float_or_else(s[10], None), 
             'longitude': util.float_or_else(s[11], None)}
 
+def auto_find_port():
+    ports = serial.tools.list_ports.comports()
+
+    possibles = []
+
+    for port in ports:
+        if port.manufacturer == "FTDI" and port.product == "FT231X USB UART":
+            possibles.append(port.device)
+
+    if len(possibles) == 0:
+        logger.warn("No port automatically detected. Return default /dev/ttyUSB0")
+        return "/dev/ttyUSB0"
+    if len(possibles) > 1:
+        logger.warn(f"zigbee port is ambigeous. [{','.join(possibles)}]")
+    return possibles[0]
 
 
-class XBeeCommunication:
 
-    def __init__(self, sender: XBee=None, led_communicator = None):
-        self.sender = sender
-        self.queue = Queue()
-        self.running = False
-        self.targets = Queue()
-        self._max_size = XBEE_QUEUE_SIZE
-        self.led_communicator = led_communicator
-
-    def __del__(self):
-        self.stop()
-
-    def set_sender(self, sender: XBee):
-        self.sender = sender
-
-    def add_targets(self, targets: Union[str,List[str]]):
-        """Add a set of nodes (by their node identifier (xbee NI value)) that are connected to the internet and can thus be used for internet communication.
-        Data will be sent to one of these.
-        """
-        if type(targets) is not list: targets = [targets]
-        for target in targets:
-            self.targets.put(target)
-
-    def encode_and_send(self, data: Dict):
-        self.send_data(encode_data(data))
-
-    def send_data(self, data: str):
-        if self.queue.unfinished_tasks >= self._max_size:
-            self.queue.get()
-            self.queue.task_done()
-        self.queue.put(data)
-
-    def start_in_thread(self):
-        if self.running:
-            raise RuntimeError("Sending thread already started")
-        if self.targets.qsize == 0:
-            raise ValueError("No targets specified")
-        if self.sender is None:
-            raise ValueError("No sender device specified")
-
-        logger.info("--- starting Xbee thread ---")
-        
-        self.running = True
-        self.thread = Thread(target=self.run, daemon=True)
-        self.thread.start()
-
-    def _send_data(self, data: str) -> bool:
-        target = self.targets.queue[0]
-        first = target
-
-        success = False
-
-        while self.running:
-            logger.debug(f"unfinished zigbee tasks: {self.queue.unfinished_tasks}")
-            self.set_led_state(LEDState.ZIGBEE_STACKING, self.queue.unfinished_tasks > XBEE_STACKING_THRESHOLD)
-            success = self.sender.send_to_device(target, data)
-            if success:
-                self.set_led_state(LEDState.NO_ZIGBEE_CONNECTION, False)
-                return success
-            logger.debug(f"cannot reach target {target}")
-            self.set_led_state(LEDState.NO_ZIGBEE_CONNECTION, True)
-            target = self.targets.get()
-            self.targets.put(target)
-            target = self.targets.queue[0]
-
-            if target == first:
-                logger.warn(f"no target nodes reachable. Try again in 2s")
-                time.sleep(2)
-            else:
-                time.sleep(0.5)
-        return False
-
-    def _blocking_sending_loop(self):
-        while self.running:
-            try: 
-                if self.queue.unfinished_tasks > 0:
-                    data = self.queue.get()
-
-                    self._send_data(data)
-
-                    logger.debug(f"Data sent to node {self.targets.queue[0]}")
-                    self.queue.task_done()
-
-                time.sleep(1)
-
-                if self.queue.unfinished_tasks >= 10:
-                    logger.warn(f"zigbee queue is not getting done. Size: {self.queue.unfinished_tasks}")
-            except Exception as e:
-                logger.error(f"uncaught exception")
-                logger.error(traceback.format_exc(e))
-                time.sleep(5)
-        logger.info("zigbee thread finished")
-
-    def stop(self):
-        logger.info("--- Shutting down Zigbee thread ---")
-        if self.running == False:
-            return
-
-        self.running = False
-        logger.debug("queue joined")
-        self.thread.join()
-        logger.debug("thread joined")
-        self.sender.device.close()
-        logger.info("--- Zigbee thread shut down ---")
-
-    def set_led_state(self, state: LEDState, value: bool):
-        if not self.led_communicator:
-            return
-        
-        logger.debug("setting zigbee comm value")
-
-        if value:
-            self.led_communicator.enable_state(state)
-        else:
-            self.led_communicator.disable_state(state)
-    
 
 class XBeeController:
 
     def __init__(self, port='auto'):
-        if port == 'auto': port = auto_find_port()
         self.port: str = port
         self.device: XBeeDevice
         self.target_ids: List[str] = []
@@ -284,11 +88,13 @@ class XBeeController:
             self.device.close()
 
     def _setup(self):
-
+        port = self.port
+        logger.debug(f"port: {port}")
+        if port == 'auto': port = auto_find_port()
         self.target_ids = Config.Zigbee.internet_ids
 
-        logger.debug(f"setting up xbee device on port {self.port}")
-        self.device = XBeeDevice(self.port, Config.Zigbee.baud_rate)
+        logger.debug(f"setting up xbee device on port {port}")
+        self.device = XBeeDevice(port, Config.Zigbee.baud_rate)
         self.device.open()
 
         self.device.set_pan_id(Config.Zigbee.pan.to_bytes(8, 'little'))
@@ -326,29 +132,44 @@ class XBeeController:
         time.sleep(1)
 
     def stop(self):
+        logger.debug("xbee stop call")
         self.running = False
         self.thread.join()
 
     def _run(self):
-        self._setup()
-        
-        if Config.Zigbee.my_label in self.target_ids:
-            logger.info("Running XBee as Receiver")
-            self._run_receiver()
-        else:
-            logger.info("Running XBee as Sender")
-            self._run_sender()
+        while self.running:
+            try:
+                self._setup()
+                
+                if Config.Zigbee.my_label in self.target_ids:
+                    logger.info("Running XBee as Receiver")
+                    self._run_receiver()
+                else:
+                    logger.info("Running XBee as Sender")
+                    self._run_sender()
 
-        logger.debug("tearing down xbee")
-        self._teardown()
+                logger.debug("tearing down xbee")
+            except Exception as e:
+                logger.error("XBee thread crashed with exception - trying to restart in 5s")
+                
+                logger.error(e)
+                logger.debug("end of error message")
+                time.sleep(10)
+                logger.debug("restarting xbee thread")
+            finally:
+                self._teardown()
         logger.info("--- xbee thread finished ---")
 
     def _run_receiver(self):
         self.is_sender = False
         self.ready = True
-        # receiver does nothing, because receiving messages in mananged by the callback
+
         while self.running:
-            time.sleep(5)
+            # if there are some issues with xbee, the discovery will throw an exception which causes the thread to restart
+            logger.debug("xbee receive checkup")
+            self._discover_network(5)
+            logger.debug(f"devices discovered: [{','.join(id for id in self.targets.keys())}]")
+            time.sleep(10)
 
 
     def _run_sender(self):
@@ -391,22 +212,29 @@ class XBeeController:
         self.message_received_callback = callback
         
     def enqueue_message(self, message: str):
-        logger.debug("adding message to queue")
         if self.message_queue.unfinished_tasks >= XBEE_QUEUE_SIZE:
             logger.warn("xbee queue full. Dropping old data")
             self.message_queue.get()
             self.message_queue.task_done
         self.message_queue.put(message)
+        
+        logger.debug(f"adding message to queue. size: {self.message_queue.unfinished_tasks}")
 
-    def _discover_network(self) -> List[str]:
+    def _discover_network(self, timeout=10) -> List[str]:
+        """
+        Make a discovery in the xbee network with the given timeout.
+        Every discovered node is written to the self.targets dict.
+
+        @return a list of the intersection between all discovered devices and set targets.
+            This directly displays a list of available targets found.
+        """
         logger.debug("starting xbee network discovery")
         xnet = self.device.get_network()
 
-        xnet.set_discovery_timeout(20)
+        xnet.set_discovery_timeout(timeout)
         xnet.start_discovery_process(True, 1)
 
         while xnet.is_discovery_running():
-            logger.debug("discovery running")
             time.sleep(1)
 
         nodes = xnet.get_devices()
@@ -462,20 +290,3 @@ class ZigbeeStorage:
         #self.com.encode_and_send(params)
         message = encode_data(params)
         self.com.enqueue_message(message)
-
-
-def auto_find_port():
-    ports = serial.tools.list_ports.comports()
-
-    possibles = []
-
-    for port in ports:
-        if port.manufacturer == "FTDI" and port.product == "FT231X USB UART":
-            possibles.append(port.device)
-
-    if len(possibles) == 0:
-        logger.warn("No port automatically detected. Return default /dev/ttyUSB0")
-        return "/dev/ttyUSB0"
-    if len(possibles) > 1:
-        logger.warn(f"zigbee port is ambigeous. [{','.join(possibles)}]")
-    return possibles[0]

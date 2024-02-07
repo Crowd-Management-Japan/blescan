@@ -22,15 +22,13 @@ from config import Config, parse_ini
 
 from network import InternetCommunicator, Upstream
 
-from xbee import XBeeCommunication, XBee, get_configuration, decode_data, ZigbeeStorage, auto_find_port, XBeeController
+from xbee import decode_data, ZigbeeStorage, XBeeController
 
 import time
 
 comm = LEDCommunicator()
 internet = None
-xbee = XBeeCommunication(led_communicator=comm)
-
-controller = XBeeController(Config.Zigbee.port)
+xbee = XBeeController()
 
 
 CODE_SHUTDOWN_DEVICE = 100
@@ -91,12 +89,10 @@ def shutdown_blescan():
     logger.info("--- stopping daemons ---")
     if comm:
         comm.stop()
-    if xbee:
-        xbee.stop()
     if internet:
         internet.stop()
 
-    controller.stop()
+    xbee.stop()
 
 def setup_internet():
     logger.debug("Setting up internet")
@@ -116,40 +112,15 @@ def receive_zigbee_message(sender, text):
 
 def setup_zigbee():
     logger.info("Setting up xbee")
-    controller.start()
+    xbee.start()
     
-    if controller.is_sender:
+    if xbee.is_sender:
         logger.debug("appending xbee storage")
-        stor = ZigbeeStorage(controller)
+        stor = ZigbeeStorage(xbee)
         Config.Counting.storage.append(stor)
     else:
         logger.debug("setting message callback")
-        controller.set_message_received_callback(receive_zigbee_message)
-
-    return 
-
-    if Config.Zigbee.port == "auto":
-        Config.Zigbee.port = auto_find_port()
-
-    device = XBee(Config.Zigbee.port)
-
-    conf = get_configuration(Config.Zigbee.pan, Config.Zigbee.is_coordinator, Config.Zigbee.my_label)
-
-    device.configure(conf)
-
-    logger.info(f"Zigbee: port {Config.Zigbee.port} - configuration: {dict(conf, ID=util.byte_to_hex(conf['ID']), CE=util.byte_to_hex(conf['CE']))}")
-
-    xbee.set_sender(device)
-    xbee.add_targets(Config.Zigbee.internet_ids)
-
-    if Config.Zigbee.my_label in Config.Zigbee.internet_ids:
-        logger.info("Setting up zigbee as receiver")
-        device.add_receive_callback(receive_zigbee_message)
-    else:
-        logger.info("Setting up zigbee as sender")
-        stor = ZigbeeStorage(xbee)
-        Config.Counting.storage.append(stor)
-        xbee.start_in_thread()
+        xbee.set_message_received_callback(receive_zigbee_message)
 
 
 if __name__ == "__main__":
