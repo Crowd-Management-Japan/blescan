@@ -106,6 +106,8 @@ class InternetController:
             elif self.message_queue.unfinished_tasks > 0:
                 logger.debug(f"retrieving next internet message")
                 message = self.message_queue.get()
+        # end while
+            
 
         logger.debug("internet thread stopping safely. Send remaining messages")
         while self.message_queue.unfinished_tasks > 0:
@@ -114,7 +116,6 @@ class InternetController:
             self._send_message(message, timeout=0.5)
             self.message_queue.task_done()
 
-        # end while
         logger.debug("internet thread finished")
             
 
