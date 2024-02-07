@@ -1,4 +1,5 @@
 import configparser
+from typing import List
 
 import storage
 import logging
@@ -7,39 +8,39 @@ logger = logging.getLogger('blescan.config')
 
 class Config:
 
-    inifile = None
-    serial_number = None
+    inifile: configparser.ConfigParser = None
+    serial_number: int = None
 
-    use_location = False
-    longitude = None
-    latitude = None
+    use_location: bool = False
+    longitude: float = None
+    latitude: float = None
 
     class Counting:
-        rssi_threshold = -100
-        rssi_close_threshold = rssi_threshold
-        delta = 10
-        storage = []
-        use_internet = False
-        internet_url = None
+        rssi_threshold: int = -100
+        rssi_close_threshold: int = rssi_threshold
+        delta: int = 10
+        storage: List = []
+        use_internet: bool = False
+        internet_url: str = None
 
-    class Zigbee:
-        use_zigbee = False
-        internet_ids = []
+    class XBee:
+        use_xbee: bool = False
+        internet_ids: List[str] = []
 
-        pan = 1
+        pan: int = 1
 
-        port = "/dev/ttyUSB0"
-        baud_rate = 9600
-        is_coordinator = True
-        my_label = "42_C"
+        port: str = "auto"
+        baud_rate: int = 9600
+        is_coordinator: bool = True
+        my_label: str = " "
 
     class Beacon:
-        target_id = ''
-        scans = 8
-        threshold = 3
-        storage = []
-        shutdown_on_scan = False
-        shutdown_id = None
+        target_id: str = ''
+        scans: int = 8
+        threshold: int = 3
+        storage: List = []
+        shutdown_on_scan: bool = False
+        shutdown_id: str = None
 
     @staticmethod
     def check_integrity():
@@ -52,8 +53,8 @@ class Config:
         if Config.Counting.use_internet and Config.Counting.internet_url == None:
             raise ValueError(f"Using internet without defining url!")
         
-        if Config.Zigbee.use_zigbee and not Config.Zigbee.internet_ids:
-            raise ValueError("Using Zigbee, but no internet nodes set")
+        if Config.XBee.use_xbee and not Config.XBee.internet_ids:
+            raise ValueError("Using XBee, but no internet nodes set")
         
         if not Config.Counting.storage and not Config.Beacon.storage and not Config.Counting.use_internet:
             raise ValueError("Not storing any counting or beacon data!")
@@ -96,21 +97,21 @@ def _parse_counting_settings(inifile):
     Config.Counting.internet_url = section.get('url', None)
     
 
-def _parse_zigbee_settings(inifile):
+def _parse_xbee_settings(inifile):
     section = inifile["ZIGBEE"]
-    Config.Zigbee.use_zigbee = bool(int(section.get('use_zigbee', '0')))
-    if not Config.Zigbee.use_zigbee:
+    Config.XBee.use_xbee = bool(int(section.get('use_zigbee', '0')))
+    if not Config.XBee.use_xbee:
         return
     
-    Config.Zigbee.pan = int(section.get('pan', '99'))
+    Config.XBee.pan = int(section.get('pan', '99'))
     
-    Config.Zigbee.port = section.get('port', '/dev/ttyUSB0')
-    Config.Zigbee.baud_rate = int(section.get('baud_rate', 9600))
-    Config.Zigbee.is_coordinator = bool(int(section.get('is_coordinator', '0')))
-    Config.Zigbee.my_label = section.get('my_label', ' ')
+    Config.XBee.port = section.get('port', '/dev/ttyUSB0')
+    Config.XBee.baud_rate = int(section.get('baud_rate', 9600))
+    Config.XBee.is_coordinator = bool(int(section.get('is_coordinator', '0')))
+    Config.XBee.my_label = section.get('my_label', ' ')
 
     nodes = section.get('internet_nodes')
-    Config.Zigbee.internet_ids = [_.strip() for _ in nodes.split(',')]
+    Config.XBee.internet_ids = [_.strip() for _ in nodes.split(',')]
 
 
 def _parse_beacon_settings(inifile):
@@ -151,7 +152,7 @@ def parse_ini(path='config.ini'):
 
     _parse_user_settings(inifile)
     _parse_counting_settings(inifile)
-    _parse_zigbee_settings(inifile)
+    _parse_xbee_settings(inifile)
     _parse_beacon_settings(inifile)
 
     Config.check_integrity()

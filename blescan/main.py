@@ -15,19 +15,20 @@ from BleBeacon import BleBeacon
 from storage import Storage
 from led import LEDCommunicator, LEDState
 from datetime import datetime
+import util
 
 import sys
 from config import Config, parse_ini
 
-from network import InternetCommunicator, Upstream
+from network import InternetStorage, InternetController
 
-from xbee import XBeeCommunication, XBee, get_configuration, decode_data, ZigbeeStorage, auto_find_port
+from xbee import decode_data, XBeeStorage, XBeeController
 
 import time
 
 comm = LEDCommunicator()
-internet = None
-xbee = XBeeCommunication(led_communicator=comm)
+internet = InternetController(led_communicator=comm)
+xbee = XBeeController(led_communicator=comm)
 
 
 CODE_SHUTDOWN_DEVICE = 100
@@ -39,8 +40,8 @@ async def main(config_path: str='./config.ini'):
     if Config.Counting.use_internet:
         setup_internet()
 
-    if Config.Zigbee.use_zigbee:
-        setup_zigbee()
+    if Config.XBee.use_xbee:
+        setup_xbee()
 
     # setting up beacon functionality
     beacon_storage = Config.Beacon.storage
@@ -86,54 +87,38 @@ async def main(config_path: str='./config.ini'):
 
 def shutdown_blescan():
     logger.info("--- stopping daemons ---")
-    if comm:
-        comm.stop()
-    if xbee:
-        xbee.stop()
-    if internet:
-        internet.stop()
+    internet.stop()
+    xbee.stop()
+    
+    comm.stop()
 
 def setup_internet():
     logger.debug("Setting up internet")
-    global internet
-    internet = InternetCommunicator(Config.Counting.internet_url, comm)
 
-    up = Upstream(internet)
+    internet.set_url(Config.Counting.internet_url)
+
+    up = InternetStorage(internet)
     Config.Counting.storage.append(up)
 
-    internet.start_thread()
+    internet.start()
 
-def receive_zigbee_message(sender, text):
-    logger.debug(f"received message from zigbee {sender}")
+def receive_xbee_message(sender, text):
     decoded = decode_data(text)
-    internet.enqueue_send_message(decoded)
+    logger.debug(f"received message from xbee {sender}, decoded: {decoded}")
+    internet.enqueue_message(decoded)
 
 
-def setup_zigbee():
-    logger.info("Setting up zigbee")
-
-    if Config.Zigbee.port == "auto":
-        Config.Zigbee.port = auto_find_port()
-
-    device = XBee(Config.Zigbee.port)
-
-    conf = get_configuration(Config.Zigbee.pan, Config.Zigbee.is_coordinator, Config.Zigbee.my_label)
-
-    device.configure(conf)
-
-    logger.info(f"Zigbee: port {Config.Zigbee.port} - configuration: {conf}")
-
-    xbee.set_sender(device)
-    xbee.add_targets(Config.Zigbee.internet_ids)
-
-    if Config.Zigbee.my_label in Config.Zigbee.internet_ids:
-        logger.info("Setting up zigbee as receiver")
-        device.add_receive_callback(receive_zigbee_message)
-    else:
-        logger.info("Setting up zigbee as sender")
-        stor = ZigbeeStorage(xbee)
+def setup_xbee():
+    logger.info("Setting up xbee")
+    xbee.start()
+    
+    if xbee.is_sender:
+        logger.debug("appending xbee storage")
+        stor = XBeeStorage(xbee)
         Config.Counting.storage.append(stor)
-        xbee.start_sending_thread()
+    else:
+        logger.debug("setting message callback")
+        xbee.set_message_received_callback(receive_xbee_message)
 
 
 if __name__ == "__main__":

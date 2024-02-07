@@ -9,9 +9,8 @@ from time import sleep
 import logging
 import datetime
 import util
-import traceback
 import config
-from led import LEDState
+from led import LEDState, LEDCommunicator
 
 import json
 
@@ -22,13 +21,140 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 INTERNET_STACKING_THRESHOLD = 3
 INTERNET_QUEUE_SIZE = 1000
 
-class Upstream:
+class InternetController:
+    """
+    The internet controller manages the internet connection.
+    It can be started in a separated thread by calling the `start()`-method.
+    After doing this, messages can be enqueue by calling `enqueue_message(message)`.
+    These messages will get sent to the specified `url` endpoint.
+    When also given a LEDCommunicator, this instance will give information about its current state.
 
-    def __init__(self, communicator):
-        self.com = communicator
+    Stop the thread by calling `stop()`. This will terminate the loop safely, with trying to send all
+    enqueued messages before exiting.
+    """
 
-    def check_connection(self):
-        pass
+    def __init__(self, url='', led_communicator:LEDCommunicator=None):
+        self.url:str = url
+        self.led_communicator: LEDCommunicator = led_communicator
+        self.message_queue = Queue()
+        self.thread: Thread
+        self.ready: bool = False
+        self.running: bool = False
+
+    def set_url(self, url:str):
+        self.url = url
+
+    def set_led_communicator(self, communicator: LEDCommunicator):
+        self.led_communicator = communicator
+
+    def start(self):
+        """
+        Start a thread as a daemon. Only has effect, if the instance is not running yet.
+        """
+        if self.running:
+            logger.error("Internet thread already running")
+        self.running = True
+        logger.info("--- starting Internet thread ---")
+
+        self.thread = Thread(target=self._run, daemon=True)
+        self.thread.start()
+
+    def stop(self):
+        """
+        Stop the thread and terminate safely. Try to send remaining messages before exiting
+        """
+        if not self.running:
+            return
+        logger.debug("internet thread stop call")
+        self.running = False
+        self.thread.join()
+        logger.info("--- Internet thread shut down ---")
+
+    def enqueue_message(self, message: str):
+        """
+        Enqueue a message to be sent.
+        If the Queue is already full, older data will be dropped to add this message
+        """
+        if self.message_queue.unfinished_tasks >= INTERNET_QUEUE_SIZE:
+            logger.warn("internet queue full. Dropping old data")
+            self.message_queue.get()
+            self.message_queue.task_done()
+        self.message_queue.put(message)
+        
+        logger.debug(f"adding message to internet queue. size: {self.message_queue.unfinished_tasks}")
+
+    def _run(self):
+        """
+        Private method that is actually executed as a thread.
+        """
+        message = None
+        while self.running:
+
+            self._set_state(LEDState.INTERNET_STACKING, self.message_queue.unfinished_tasks > INTERNET_STACKING_THRESHOLD)
+
+            if message is not None:
+                success = self._send_message(message)
+                logger.debug(f"internet sending success: {success} ")
+                if success:
+                    self._set_state(LEDState.NO_INTERNET_CONNECTION, False)
+                    self.message_queue.task_done()
+                    message = None
+                else:
+                    self._set_state(LEDState.NO_INTERNET_CONNECTION, True)
+                    sleep(2)
+
+            elif self.message_queue.unfinished_tasks > 0:
+                logger.debug(f"retrieving next internet message")
+                message = self.message_queue.get()
+        # end while
+            
+
+        logger.debug("internet thread stopping safely. Send remaining messages")
+        while self.message_queue.unfinished_tasks > 0:
+            logger.debug(f"internet remaining: {self.message_queue.unfinished_tasks}")
+            message = self.message_queue.get()
+            self._send_message(message, timeout=0.5)
+            self.message_queue.task_done()
+
+        logger.debug("internet thread finished")
+            
+
+    def _send_message(self, message: Dict, timeout=5) -> bool:
+        """
+        Try to send a single message to the upstream.
+        Return true if sending process was successfull.
+        """
+        logger.debug("sending internet message...")
+        success = False
+        try:
+            response = requests.post(self.url, json=message, timeout=timeout)
+            code = response.status_code
+            success = (code == 200)
+        except Exception as e:
+            logger.error("Error while sending message to internet")
+            logger.error(e)
+            return False
+        return success
+
+    def _set_state(self, state: LEDState, value: bool):
+        if self.led_communicator is None:
+            return
+        
+        self.led_communicator.set_state(state, value)
+
+
+
+class InternetStorage:
+    """
+    Storage adapter for internet connection.
+
+    Implements the method `save_from_count` to be seen as storage from the count functionality.
+
+    It brings the data in the right format and prepares it to send
+    """
+
+    def __init__(self, controller: InternetController):
+        self.com = controller
 
     async def save_from_count(self, id: int, timestamp: datetime.datetime, rssi_list: List, close_threshold: int):
 
@@ -50,118 +176,4 @@ class Upstream:
                                     'rssi_avg':summary[4],'rssi_std':summary[5],'rssi_min':summary[6],'rssi_max':summary[7],
                                     'latitude': config.Config.latitude, 'longitude': config.Config.longitude}
 
-        logger.debug("sending message to %s: %s", self.com.url, params)
-
-        self.com.enqueue_send_message(params)
-
-
-class InternetCommunicator:
-
-    def __init__(self, url, led_communicator = None):
-        self.url = url
-        self.send_queue = Queue()
-        self._max_queue_size = INTERNET_QUEUE_SIZE
-        self.running = False
-        self.led_communicator = led_communicator
-
-    def enqueue_send_message(self, data: Dict):
-        if self.send_queue.unfinished_tasks >= self._max_queue_size:
-            self.send_queue.get()
-            self.send_queue.task_done()
-        self.send_queue.put(data)
-        logger.debug("enqueued message, size %d", self.send_queue.unfinished_tasks)
-
-    def _send_message(self, data: Dict) -> bool:
-        logger.debug("sending message")
-        code = 0
-        success = False
-        while code != 200 and self.running:
-            try:
-                response = requests.post(self.url, json=data, timeout=5)
-                code = response.status_code
-                if response.status_code == 200:
-                    success = True
-                else:
-                    logger.error(f"Error sending message to upstream url -- {response}")
-                    sleep(2)
-            except Exception as e:
-                logger.error("No internet. try reconnecting")
-                logger.error("Exception catched: %s", e)
-                self._wait_for_internet()
-
-        return success
-
-    def _wait_for_internet(self):
-        code = 0
-        self.set_led_status(LEDState.NO_INTERNET_CONNECTION, True)
-        while code != 200 and self.running:
-            try:
-                if self.send_queue.unfinished_tasks > INTERNET_STACKING_THRESHOLD:
-                    self.set_led_status(LEDState.INTERNET_STACKING, True)
-                response = requests.get(self.url, timeout=5)
-                code = response.status_code
-                logger.info(f"response code of {self.url}: {code}")
-            except Exception as e:
-                logger.info("no internet connection. Retry connecting in 5 seconds")
-                logger.debug(f"returned exception: {e}")
-            finally:
-                sleep(5)
-        if self.running:
-            logger.info("internet connection succeeded")
-        
-        self.set_led_status(LEDState.NO_INTERNET_CONNECTION, False)
-
-    def _sending_thread(self):
-        while self.running or self.send_queue.unfinished_tasks > 0:
-            try: 
-                if self.send_queue.unfinished_tasks > 0:
-                    if self.send_queue.unfinished_tasks <= INTERNET_STACKING_THRESHOLD:
-                        self.set_led_status(LEDState.INTERNET_STACKING, False)
-                    task = self.send_queue.get()
-
-                    success = self._send_message(task)
-
-                    if success or not self.running:
-                        self.send_queue.task_done()
-
-                    if success:
-                        logger.debug(f"message sent to upstream. Remaining in queue: {self.send_queue.unfinished_tasks}")
-                    else:
-                        logger.warn("Could not send request before exiting due to connection error")
-                    
-                else:
-                    sleep(1)
-            except Exception as e:
-                logger.error("Exception in Internet thread")
-                logger.error(traceback.format_exc(e))
-
-        logger.info("Internet thread finished")
-
-    def start_thread(self):
-
-        if self.running == True:
-            logger.error(f"Internet thread already running")
-
-        logger.info("--- Starting Internet Communication Thread ---")
-
-        self.running = True
-        self.thread = Thread(target=self._sending_thread, daemon=True)
-        self.thread.start()
-
-    def stop(self):
-        logger.info("--- shutting down Network thread ---")
-        if self.running == False:
-            return
-        self.running = False
-        self.send_queue.join()
-        self.thread.join()
-        logger.info("--- Network thread shut down ---")
-
-    def set_led_status(self, state: LEDState, value: bool):
-        if not self.led_communicator:
-            return
-        
-        if value:
-            self.led_communicator.enable_state(state)
-        else:
-            self.led_communicator.disable_state(state)
+        self.com.enqueue_message(params)
