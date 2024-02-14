@@ -26,16 +26,16 @@ from xbee import decode_data, XBeeStorage, XBeeController
 
 import time
 
-comm = LEDCommunicator()
-internet = InternetController(led_communicator=comm)
-xbee = XBeeController(led_communicator=comm)
+led_communicator = LEDCommunicator()
+internet = InternetController(led_communicator=led_communicator)
+xbee = XBeeController(led_communicator=led_communicator)
 
 
 CODE_SHUTDOWN_DEVICE = 100
 
 async def main(config_path: str='./config.ini'):
     parse_ini(config_path)
-    comm.start_in_thread()
+    led_communicator.start()
 
     if Config.Counting.use_internet:
         setup_internet()
@@ -65,7 +65,7 @@ async def main(config_path: str='./config.ini'):
 
     logger.info("--- Startup complete. Begin scanning ---")
 
-    comm.disable_state(LEDState.SETUP)
+    led_communicator.disable_state(LEDState.SETUP)
 
     while running:
         devices = await scanner.scan()
@@ -90,7 +90,7 @@ def shutdown_blescan():
     internet.stop()
     xbee.stop()
     
-    comm.stop()
+    led_communicator.stop()
 
 def setup_internet():
     logger.debug("Setting up internet")

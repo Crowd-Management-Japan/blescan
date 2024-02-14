@@ -181,7 +181,7 @@ class LEDCommunicator:
                 both_function(self.green, self.red)
 
 
-    def start_in_thread(self):
+    def start(self):
         logger.info("--- starting LED thread ---")
         if self.running:
             logger.error("LED thread already started")
