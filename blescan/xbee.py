@@ -219,6 +219,11 @@ class XBeeController:
         
         logger.debug("stopping xbee. Clearing queue")
         if len(available_targets) > 0:
+            # first still selected message. Otherwhise the task is never marked done and the thread stucks
+            if message:
+                self._send_message(message, timeout=0.5)
+                self.message_queue.task_done()
+
             while self.message_queue.unfinished_tasks > 0:
                 target = available_targets[0]
                 message = self.message_queue.get()
