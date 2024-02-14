@@ -107,9 +107,14 @@ class InternetController:
                 logger.debug(f"retrieving next internet message")
                 message = self.message_queue.get()
         # end while
-            
 
-        logger.debug("internet thread stopping safely. Send remaining messages")
+
+        logger.debug("internet thread stopping safely. Send remaining messages")            
+        # first still selected message. Otherwhise the task is never marked done and the thread stucks
+        if message:
+            self._send_message(message, timeout=0.5)
+            self.message_queue.task_done()
+
         while self.message_queue.unfinished_tasks > 0:
             logger.debug(f"internet remaining: {self.message_queue.unfinished_tasks}")
             message = self.message_queue.get()
