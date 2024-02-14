@@ -94,7 +94,7 @@ class Storage:
         self.save_file('summary', row_data)
 
 
-    async def save_from_count(self, id: int, timestamp: datetime.datetime, rssi_list: List, close_threshold:int):
+    async def save_count(self, id: int, timestamp: datetime.datetime, rssi_list: List, close_threshold:int):
         """
         Saves devices given by BleCount.
         This includes RSSI and summary
@@ -109,7 +109,7 @@ class Storage:
         self.save_summary(summary_row)
 
 
-    def save_from_beacon(self, time, rssi_list, manufacturer_data):
+    def save_beacon(self, time, rssi_list, manufacturer_data):
 
         # saves devices given by BleBeacon
         # this includes the beacon file

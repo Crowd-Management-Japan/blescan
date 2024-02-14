@@ -93,7 +93,7 @@ class BleCount:
         serial = config.Config.serial_number
 
         for storage in self.storages:
-            await storage.save_from_count(serial, time, self.get_rssi_list(), self.close_threshold)
+            await storage.save_count(serial, time, self.get_rssi_list(), self.close_threshold)
 
         self.scanned_devices.clear()
 

@@ -303,7 +303,7 @@ class XBeeStorage:
         self.com = com
 
     
-    async def save_from_count(self, id: int, timestamp: datetime, rssi_list: List, close_threshold: int):
+    async def save_count(self, id: int, timestamp: datetime, rssi_list: List, close_threshold: int):
 
         summary = prepare_row_data_summary(id, timestamp, rssi_list, close_threshold)
         # %Y%m%d,%H%M%S

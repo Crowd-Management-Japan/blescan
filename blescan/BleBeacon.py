@@ -139,7 +139,7 @@ class BleBeacon:
 
             for mac in macs:
                 manufacturer_data = self.macs[mac].get_manufacturer_data()
-                storage.save_from_beacon(timestr, self.staying_time[mac], manufacturer_data)
+                storage.save_beacon(timestr, self.staying_time[mac], manufacturer_data)
                 del self.staying_time[mac]
 
 
