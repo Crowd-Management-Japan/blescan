@@ -2,8 +2,7 @@ import asyncio
 from config import Config
 
 from typing import Dict, List, Union, Any, Set
-from queue import Queue
-from threading import Thread
+import multiprocessing as mp
 
 from storage import prepare_row_data_summary
 import util
@@ -78,9 +77,8 @@ class XBeeController:
         self.targets: Dict = {}
         self.message_received_callback = lambda s, t: logger.debug(f"message from {t}: {s}")
         self.running: bool = False
-        self.message_queue = Queue()
+        self.message_queue = mp.Queue()
         self.thread = None
-        self.ready = False
         self.is_sender: bool = None
         self.led_communicator = led_communicator
 
@@ -112,6 +110,8 @@ class XBeeController:
                      PAN: {util.byte_to_hex(self.device.get_pan_id())}, \n\
                      CE: {util.byte_to_hex(self.device.get_parameter('CE'))},\n\
                      NI: {self.device.get_node_id()}]")
+
+
         logger.debug(f"device using protocol {self.device.get_protocol()}")
         logger.debug(f"device setup completed")
         self._set_state(LEDState.XBEE_SETUP, False)
@@ -127,11 +127,13 @@ class XBeeController:
         self.running = True
         logger.info("--- starting XBee thread ---")
 
-        self.thread = Thread(target=self._run, daemon=True)
+        # determine role
+        self.is_sender = Config.XBee.my_label not in self.target_ids
+
+        self.thread = mp.Process(target=self._run, daemon=True)
         self.thread.start()
 
-        while self.is_sender is None:
-            pass
+        # wait a second for the thread to start
         time.sleep(1)
 
     def stop(self):
@@ -146,12 +148,12 @@ class XBeeController:
             try:
                 self._setup()
                 
-                if Config.XBee.my_label in self.target_ids:
-                    logger.info("Running XBee as Receiver")
-                    self._run_receiver()
-                else:
+                if self.is_sender:
                     logger.info("Running XBee as Sender")
                     self._run_sender()
+                else:
+                    logger.info("Running XBee as Receiver")
+                    self._run_receiver()
 
                 logger.debug("tearing down xbee")
             except Exception as e:
@@ -168,9 +170,6 @@ class XBeeController:
         logger.info("--- xbee thread finished ---")
 
     def _run_receiver(self):
-        self.is_sender = False
-        self.ready = True
-
         while self.running:
             # if there are some issues with xbee, the discovery will throw an exception which causes the thread to restart
             logger.debug("xbee receive checkup")
@@ -180,8 +179,6 @@ class XBeeController:
 
 
     def _run_sender(self):
-        self.is_sender = True
-        self.ready = True
         available_targets = []
 
         message = None
@@ -196,7 +193,7 @@ class XBeeController:
             else:
                 self._set_state(LEDState.NO_XBEE_CONNECTION, False)
 
-            self._set_state(LEDState.XBEE_STACKING, self.message_queue.unfinished_tasks > XBEE_STACKING_THRESHOLD)
+            self._set_state(LEDState.XBEE_STACKING, self.message_queue.qsize() > XBEE_STACKING_THRESHOLD)
 
             # if there is a message, send it to an available target.
             # if the target happens to not be available (_send_message return false),
@@ -207,12 +204,11 @@ class XBeeController:
                 success = self._send_message(target, message)
 
                 if success:
-                    self.message_queue.task_done()
                     message = None
                 else:
                     available_targets.remove(target)
 
-            elif self.message_queue.unfinished_tasks > 0:
+            elif self.message_queue.qsize() > 0:
                 message = self.message_queue.get()
 
         # end while
@@ -222,13 +218,11 @@ class XBeeController:
             # first still selected message. Otherwhise the task is never marked done and the thread stucks
             if message:
                 self._send_message(message, timeout=0.5)
-                self.message_queue.task_done()
 
-            while self.message_queue.unfinished_tasks > 0:
+            while self.message_queue.qsize() > 0:
                 target = available_targets[0]
                 message = self.message_queue.get()
                 self._send_message(target, message)
-                self.message_queue.task_done()
 
         logger.debug("xbee thread finished")
 
@@ -238,13 +232,12 @@ class XBeeController:
         self.message_received_callback = callback
         
     def enqueue_message(self, message: str):
-        if self.message_queue.unfinished_tasks >= XBEE_QUEUE_SIZE:
+        if self.message_queue.qsize() >= XBEE_QUEUE_SIZE:
             logger.warn("xbee queue full. Dropping old data")
             self.message_queue.get()
-            self.message_queue.task_done()
         self.message_queue.put(message)
         
-        logger.debug(f"adding message to xbee queue. size: {self.message_queue.unfinished_tasks}")
+        logger.debug(f"adding message to xbee queue. size: {self.message_queue.qsize()}")
 
     def _discover_network(self, timeout=10) -> List[str]:
         """

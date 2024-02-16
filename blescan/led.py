@@ -1,8 +1,9 @@
-import threading
 from time import sleep
 from enum import IntEnum
 from typing import Dict
 import logging
+import multiprocessing as mp
+import threading
 
 logger = logging.getLogger('blescan.LED')
 
@@ -161,7 +162,6 @@ class LEDCommunicator:
             blink_function(led)
 
     def _start_thread(self):
-
         threading.Thread(target=lambda: self._blocking_single(self.green, lambda l: self.green_function(l)), daemon=True).start()
         threading.Thread(target=lambda: self._blocking_single(self.red, lambda l: self.red_function(l)), daemon=True).start()
 
@@ -189,7 +189,7 @@ class LEDCommunicator:
         
         self.running = True
 
-        self.thread = threading.Thread(target=self._start_thread, daemon=True)
+        self.thread = mp.Process(target=self._start_thread, daemon=True)
         self.thread.start()
 
     def enable_state(self, state):

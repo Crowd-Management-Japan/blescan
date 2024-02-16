@@ -1,16 +1,15 @@
 
 from storage import prepare_row_data_summary
 from datetime import datetime
-from queue import Queue
 from typing import List, Dict, Union
 import requests
-from threading import Thread
 from time import sleep
 import logging
 import datetime
 import util
 import config
 from led import LEDState, LEDCommunicator
+import multiprocessing as mp
 
 import json
 
@@ -36,8 +35,8 @@ class InternetController:
     def __init__(self, url='', led_communicator:LEDCommunicator=None):
         self.url:str = url
         self.led_communicator: LEDCommunicator = led_communicator
-        self.message_queue = Queue()
-        self.thread: Thread
+        self.message_queue = mp.Queue()
+        self.thread: mp.Process
         self.ready: bool = False
         self.running: bool = False
 
@@ -56,8 +55,9 @@ class InternetController:
         self.running = True
         logger.info("--- starting Internet thread ---")
 
-        self.thread = Thread(target=self._run, daemon=True)
+        self.thread = mp.Process(target=self._run, daemon=True)
         self.thread.start()
+        logger.debug("internet process started")
 
     def stop(self):
         """
@@ -75,13 +75,12 @@ class InternetController:
         Enqueue a message to be sent.
         If the Queue is already full, older data will be dropped to add this message
         """
-        if self.message_queue.unfinished_tasks >= INTERNET_QUEUE_SIZE:
+        if self.message_queue.qsize() >= INTERNET_QUEUE_SIZE:
             logger.warn("internet queue full. Dropping old data")
             self.message_queue.get()
-            self.message_queue.task_done()
         self.message_queue.put(message)
         
-        logger.debug(f"adding message to internet queue. size: {self.message_queue.unfinished_tasks}")
+        logger.debug(f"adding message to internet queue. size: {self.message_queue.qsize()}")
 
     def _run(self):
         """
@@ -90,20 +89,19 @@ class InternetController:
         message = None
         while self.running:
 
-            self._set_state(LEDState.INTERNET_STACKING, self.message_queue.unfinished_tasks > INTERNET_STACKING_THRESHOLD)
+            self._set_state(LEDState.INTERNET_STACKING, self.message_queue.qsize() > INTERNET_STACKING_THRESHOLD)
 
             if message is not None:
                 success = self._send_message(message)
                 logger.debug(f"internet sending success: {success} ")
                 if success:
                     self._set_state(LEDState.NO_INTERNET_CONNECTION, False)
-                    self.message_queue.task_done()
                     message = None
                 else:
                     self._set_state(LEDState.NO_INTERNET_CONNECTION, True)
                     sleep(2)
 
-            elif self.message_queue.unfinished_tasks > 0:
+            elif self.message_queue.qsize() > 0:
                 logger.debug(f"retrieving next internet message")
                 message = self.message_queue.get()
         # end while
@@ -113,13 +111,11 @@ class InternetController:
         # first still selected message. Otherwhise the task is never marked done and the thread stucks
         if message:
             self._send_message(message, timeout=0.5)
-            self.message_queue.task_done()
 
-        while self.message_queue.unfinished_tasks > 0:
-            logger.debug(f"internet remaining: {self.message_queue.unfinished_tasks}")
+        while self.message_queue.qsize() > 0:
+            logger.debug(f"internet remaining: {self.message_queue.qsize()}")
             message = self.message_queue.get()
             self._send_message(message, timeout=0.5)
-            self.message_queue.task_done()
 
         logger.debug("internet thread finished")
             
