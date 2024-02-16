@@ -82,13 +82,13 @@ class Storage:
             csvwriter = csv.writer(f)
             csvwriter.writerow(row_data)
 
-    def save_rssi(self, row_data):
+    def _save_rssi(self, row_data):
         self.save_file('rssi', row_data)
 
-    def save_beacon(self, row_data):
+    def _save_beacon(self, row_data):
         self.save_file('beacon', row_data)
 
-    def save_summary(self, row_data):
+    def _save_summary(self, row_data):
         self.save_file('summary', row_data)
 
 
@@ -103,8 +103,8 @@ class Storage:
         rssi_row = prepare_row_data_rssi(id, time_format, rssi_list)
         summary_row = prepare_row_data_summary(id, time_format, rssi_list, close_threshold)
 
-        self.save_rssi(rssi_row)
-        self.save_summary(summary_row)
+        self._save_rssi(rssi_row)
+        self._save_summary(summary_row)
 
 
     def save_beacon(self, time, rssi_list, manufacturer_data):
@@ -113,7 +113,7 @@ class Storage:
         # this includes the beacon file
 
         beacon_row = prepare_row_data_beacon(time, rssi_list, manufacturer_data)
-        self.save_beacon(beacon_row)
+        self._save_beacon(beacon_row)
 
     def __str__(self):
         return f"Storage({self.base_dir})"
