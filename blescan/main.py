@@ -12,7 +12,7 @@ from BleCount import BleCount
 from BleBeacon import BleBeacon
 from storage import Storage
 from led import LEDCommunicator, LEDState
-from datetime import datetime
+from datetime import datetime, timedelta
 import util
 
 import sys
@@ -72,14 +72,18 @@ def main(config_path: str='./config.ini'):
         before = datetime.now()
         devices = scanner.scan(1)
 
-
         scanend = datetime.now()
-        logger.debug(f"raw scanning time {scanend - before}")
+
+        scantime = scanend - before
+
+        if scantime - timedelta(seconds=1) > timedelta(seconds=0.05):
+            logger.warn(f"scanning time is more than 5% from target (1s) {scantime}")
+
 
         counter.process_scan(devices)
         beacon.process_scan(devices)
         after = datetime.now()
-        logger.debug(f"processing took {after - before}")
+        #logger.debug(f"processing took {after - before}")
 
         if beacon.stop_call:
             logger.info("Shutdown beacon scanned. Shutting down blescan.")
