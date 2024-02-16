@@ -1,78 +1,51 @@
-import bleak
-from bleak.backends.device import BLEDevice
 
-
-
-# key of the manufacturer data for the beacon
-MANUFACTURER_ID = 76
-
-
-
-class Device:
+class Device():
     """
-    Wrapper class for bleaks BLEDevice to make it easier to access the most common fields.
-    It is used for both normal and the special beacon devices
+    Wrapper for bluepy library
+    """
+    def __init__(self, bluepy_device):
+        self.bluepy_device = bluepy_device
+        self.scan_data = bluepy_device.getScanData()
 
-    The Beacons used (BlueBeacon Tag) are produced by apple and use the manufacturer code 76 (the one of apple).
-    The data is encoded like: 
-    Fixed data: 2 bytes
-    UUID: 16bytes
-    MAJOR: 2 bytes
-    MINOR: 2 bytes
-    TX_POWER: 1byte (signed)
+        self.uuid = ""
+        self.raw_manufacturer = ""
+        self.major = ""
+        self.minor = ""
+        self.tx = ""
+
+        for (adTypeCode, description, valueText) in self.scan_data:
+            if description == "Manufacturer":
+                self.raw_manufacturer = valueText
+                self.uuid = valueText[-42:-10] # target_id
+                self.major = valueText[-10:-6]
+                self.minor = valueText[-6:-2]
+
         
-    """
-    def __init__(self, bledevice: BLEDevice, ad_data):
-        self.bledevice = bledevice
-        self.ad_data = ad_data
-
     def get_mac(self):
-        return self.bledevice.address
-    
+        return self.bluepy_device.addr
+        
     def get_rssi(self):
-        return self.ad_data.rssi
+        return self.bluepy_device.rssi
 
     def get_service_uuids(self):
-        return self.ad_data.service_uuids
+        return ""
 
     def get_major(self):
-        if MANUFACTURER_ID not in self.ad_data.manufacturer_data.keys():
-            return ''
-        
-        data = self.ad_data.manufacturer_data[MANUFACTURER_ID]
-        return ''.join(format(x, "02x") for x in data[18:20])
+        return self.major
 
     def get_minor(self):
-        if MANUFACTURER_ID not in self.ad_data.manufacturer_data.keys():
-            return ''
-        
-        data = self.ad_data.manufacturer_data[MANUFACTURER_ID]
-        return ''.join(format(x, "02x") for x in data[20:22])
+        return self.minor
+    
 
     def get_tx_power(self):
-        if MANUFACTURER_ID not in self.ad_data.manufacturer_data.keys():
-            return ''
-        
-        data = self.ad_data.manufacturer_data[MANUFACTURER_ID]
-
-        return int.from_bytes(data[-1:], signed=True, byteorder='big')
+        return self.tx
 
     def get_manufacturer_data(self):
         return {'major': self.get_major(), 'minor': self.get_minor(), 'tx': self.get_tx_power()}
 
     def get_beacon_uuid(self):
-        if 76 in self.ad_data.manufacturer_data.keys():
-            data = self.ad_data.manufacturer_data[76]
-            return ''.join(format(x, "02x") for x in data[2:18])
-        return ''
+        return self.uuid
+    
 
-
-    def __str__(self):
-        return f"Device:({self.bledevice}, {self.ad_data})"
-
-    def __repr__(self):
-        return self.__str__()
-
-
-def transform_scan_results(scanned_devices):
-    return [Device(d[0], d[1]) for d in scanned_devices.values()]
+def transform_bluepy_results(bluepy_devices):
+    return [Device(d) for d in bluepy_devices]
