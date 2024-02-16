@@ -78,7 +78,7 @@ class XBeeController:
         self.message_received_callback = lambda s, t: logger.debug(f"message from {t}: {s}")
         self.running: bool = False
         self.message_queue = mp.Queue()
-        self.thread = None
+        self.process = None
         self.is_sender: bool = None
         self.led_communicator = led_communicator
 
@@ -125,15 +125,15 @@ class XBeeController:
             logger.error("Already running a XBee instance")
             return
         self.running = True
-        logger.info("--- starting XBee thread ---")
+        logger.info("--- starting XBee process ---")
 
         # determine role
         self.is_sender = Config.XBee.my_label not in self.target_ids
 
-        self.thread = mp.Process(target=self._run, daemon=True)
-        self.thread.start()
+        self.process = mp.Process(target=self._run, daemon=True)
+        self.process.start()
 
-        # wait a second for the thread to start
+        # wait a second for the process to start
         time.sleep(1)
 
     def stop(self):
@@ -141,7 +141,7 @@ class XBeeController:
             return
         logger.debug("xbee stop call")
         self.running = False
-        self.thread.join()
+        self.process.join()
 
     def _run(self):
         while self.running:
@@ -158,20 +158,20 @@ class XBeeController:
                 logger.debug("tearing down xbee")
             except Exception as e:
                 self._set_state(LEDState.XBEE_CRASH, True)
-                logger.error("XBee thread crashed with exception - trying to restart in 5s")
+                logger.error("XBee process crashed with exception - trying to restart in 5s")
                 
                 logger.error(e)
                 logger.debug("end of error message")
                 time.sleep(10)
-                logger.debug("restarting xbee thread")
+                logger.debug("restarting xbee process")
                 self._set_state(LEDState.XBEE_CRASH, False)
             finally:
                 self._teardown()
-        logger.info("--- xbee thread finished ---")
+        logger.info("--- xbee process finished ---")
 
     def _run_receiver(self):
         while self.running:
-            # if there are some issues with xbee, the discovery will throw an exception which causes the thread to restart
+            # if there are some issues with xbee, the discovery will throw an exception which causes the process to restart
             logger.debug("xbee receive checkup")
             self._discover_network(5)
             logger.debug(f"devices discovered: [{','.join(id for id in self.targets.keys())}]")
@@ -215,7 +215,7 @@ class XBeeController:
         
         logger.debug("stopping xbee. Clearing queue")
         if len(available_targets) > 0:
-            # first still selected message. Otherwhise the task is never marked done and the thread stucks
+            # first still selected message. Otherwhise the task is never marked done and the process stucks
             if message:
                 self._send_message(message, timeout=0.5)
 
@@ -224,7 +224,7 @@ class XBeeController:
                 message = self.message_queue.get()
                 self._send_message(target, message)
 
-        logger.debug("xbee thread finished")
+        logger.debug("xbee process finished")
 
 
 

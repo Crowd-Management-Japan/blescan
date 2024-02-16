@@ -140,9 +140,10 @@ class LEDCommunicator:
     def __init__(self):
         self.running = False
         self.code = LED_SETUP
-        self._states = {
+        self._states = mp.Manager().dict()
+        self._states.update({
             value: False for value in LEDState
-        }
+        })
         self._states[LEDState.SETUP] = True
         self._state_changed = True
         self.setup()

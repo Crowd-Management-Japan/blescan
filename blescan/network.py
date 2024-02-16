@@ -23,12 +23,12 @@ INTERNET_QUEUE_SIZE = 1000
 class InternetController:
     """
     The internet controller manages the internet connection.
-    It can be started in a separated thread by calling the `start()`-method.
+    It can be started in a separated process by calling the `start()`-method.
     After doing this, messages can be enqueue by calling `enqueue_message(message)`.
     These messages will get sent to the specified `url` endpoint.
     When also given a LEDCommunicator, this instance will give information about its current state.
 
-    Stop the thread by calling `stop()`. This will terminate the loop safely, with trying to send all
+    Stop the process by calling `stop()`. This will terminate the loop safely, with trying to send all
     enqueued messages before exiting.
     """
 
@@ -36,7 +36,7 @@ class InternetController:
         self.url:str = url
         self.led_communicator: LEDCommunicator = led_communicator
         self.message_queue = mp.Queue()
-        self.thread: mp.Process
+        self.process: mp.Process
         self.ready: bool = False
         self.running: bool = False
 
@@ -48,27 +48,27 @@ class InternetController:
 
     def start(self):
         """
-        Start a thread as a daemon. Only has effect, if the instance is not running yet.
+        Start a process as a daemon. Only has effect, if the instance is not running yet.
         """
         if self.running:
-            logger.error("Internet thread already running")
+            logger.error("Internet process already running")
         self.running = True
-        logger.info("--- starting Internet thread ---")
+        logger.info("--- starting Internet process ---")
 
-        self.thread = mp.Process(target=self._run, daemon=True)
-        self.thread.start()
+        self.process = mp.Process(target=self._run, daemon=True)
+        self.process.start()
         logger.debug("internet process started")
 
     def stop(self):
         """
-        Stop the thread and terminate safely. Try to send remaining messages before exiting
+        Stop the process and terminate safely. Try to send remaining messages before exiting
         """
         if not self.running:
             return
-        logger.debug("internet thread stop call")
+        logger.debug("internet process stop call")
         self.running = False
-        self.thread.join()
-        logger.info("--- Internet thread shut down ---")
+        self.process.join()
+        logger.info("--- Internet process shut down ---")
 
     def enqueue_message(self, message: str):
         """
@@ -84,7 +84,7 @@ class InternetController:
 
     def _run(self):
         """
-        Private method that is actually executed as a thread.
+        Private method that is actually executed as a process.
         """
         message = None
         while self.running:
@@ -107,8 +107,8 @@ class InternetController:
         # end while
 
 
-        logger.debug("internet thread stopping safely. Send remaining messages")            
-        # first still selected message. Otherwhise the task is never marked done and the thread stucks
+        logger.debug("internet process stopping safely. Send remaining messages")            
+        # first still selected message. Otherwhise the task is never marked done and the process stucks
         if message:
             self._send_message(message, timeout=0.5)
 
@@ -117,7 +117,7 @@ class InternetController:
             message = self.message_queue.get()
             self._send_message(message, timeout=0.5)
 
-        logger.debug("internet thread finished")
+        logger.debug("internet process finished")
             
 
     def _send_message(self, message: Dict, timeout=5) -> bool:
