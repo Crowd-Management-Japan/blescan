@@ -117,10 +117,10 @@ def get_red_function(state: Dict[LEDState, bool]) -> lambda led: None:
     if state.get(LEDState.XBEE_CRASH, False):
         return LED_TRIPLE
 
-    if state.get(LEDState.NO_XBEE_CONNECTION, False):
-        return LED_SLOW
     if state.get(LEDState.XBEE_STACKING, False):
         return LED_FAST
+    if state.get(LEDState.NO_XBEE_CONNECTION, False):
+        return LED_SLOW
     
 
 
