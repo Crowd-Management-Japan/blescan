@@ -1,5 +1,3 @@
-import asyncio
-#from main import SERIAL_NUMBER
 import datetime
 import os
 import csv
@@ -94,7 +92,7 @@ class Storage:
         self.save_file('summary', row_data)
 
 
-    async def save_count(self, id: int, timestamp: datetime.datetime, rssi_list: List, close_threshold:int):
+    def save_count(self, id: int, timestamp: datetime.datetime, rssi_list: List, close_threshold:int):
         """
         Saves devices given by BleCount.
         This includes RSSI and summary

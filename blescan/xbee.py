@@ -1,4 +1,3 @@
-import asyncio
 from config import Config
 
 from typing import Dict, List, Union, Any, Set
@@ -301,7 +300,7 @@ class XBeeStorage:
         self.com = com
 
     
-    async def save_count(self, id: int, timestamp: datetime, rssi_list: List, close_threshold: int):
+    def save_count(self, id: int, timestamp: datetime, rssi_list: List, close_threshold: int):
 
         summary = prepare_row_data_summary(id, timestamp, rssi_list, close_threshold)
         # %Y%m%d,%H%M%S

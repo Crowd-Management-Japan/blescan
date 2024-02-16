@@ -1,5 +1,3 @@
-import asyncio
-
 import logging
 # setup logging
 logging.basicConfig(level=logging.ERROR, 
@@ -33,7 +31,7 @@ xbee = XBeeController(led_communicator=led_communicator)
 
 CODE_SHUTDOWN_DEVICE = 100
 
-async def main(config_path: str='./config.ini'):
+def main(config_path: str='./config.ini'):
     parse_ini(config_path)
     led_communicator.start()
 
@@ -43,6 +41,8 @@ async def main(config_path: str='./config.ini'):
     if Config.XBee.use_xbee:
         setup_xbee()
 
+    logger.debug("setup BleBeacon")
+
     # setting up beacon functionality
     beacon_storage = Config.Beacon.storage
     beacon_target = Config.Beacon.target_id
@@ -50,6 +50,7 @@ async def main(config_path: str='./config.ini'):
     beacon_threshold = Config.Beacon.threshold
     beacon = BleBeacon(beacon_target,beacon_scans, beacon_threshold, beacon_storage)
 
+    logger.debug("setup BleCount")
     # setting up counting functionality
     counting_storage = Config.Counting.storage
     threshold = Config.Counting.rssi_threshold
@@ -68,14 +69,17 @@ async def main(config_path: str='./config.ini'):
     led_communicator.disable_state(LEDState.SETUP)
 
     while running:
-        devices = await scanner.scan()
-
         before = datetime.now()
-        await counter.process_scan(devices)
+        devices = scanner.scan(1)
 
+
+        scanend = datetime.now()
+        logger.debug(f"raw scanning time {scanend - before}")
+
+        counter.process_scan(devices)
         beacon.process_scan(devices)
         after = datetime.now()
-        #logger.debug(f"processing took {after - before}")
+        logger.debug(f"processing took {after - before}")
 
         if beacon.stop_call:
             logger.info("Shutdown beacon scanned. Shutting down blescan.")
@@ -131,7 +135,7 @@ if __name__ == "__main__":
     exit_code = 1
 
     try:
-        exit_code = asyncio.run(main(config_path))
+        exit_code = main(config_path)
     except KeyboardInterrupt:
         pass
 
