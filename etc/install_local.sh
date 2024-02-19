@@ -25,6 +25,12 @@ pip install -r requirements.txt
 yes | pip uninstall pyserial
 pip install pyserial
 
+blpy=`find .venv/ -name "bluepy-helper`
+
+# needed to run bluepy without sudo
+sudo setcap cap_net_raw+e $blpy
+sudo setcap cap_net_admin+eip $blpy
+
 echo -------- completed --------
 echo -------- install systemd service --------
 
