@@ -2,7 +2,7 @@
 
 # all paths should be from blescan as root
 BLESCAN_CONFIG_PATH='etc/blescan.conf'
-BLESCAN_FALLBACK_CONFIG='blescan/config.ini'
+BLESCAN_LOCAL_CONFIG='blescan/config.ini'
 WRAPPER_CONFIG_PATH='etc/wrapper.conf'
 
 # update git repository
@@ -34,16 +34,26 @@ echo heartbeat > $ledRed/trigger
 # -u for unbuffered output to see it in systemctl status
 python -u wrapper/blescan-wrapper.py $WRAPPER_CONFIG_PATH $BLESCAN_CONFIG_PATH
 
+wrapper_code=$?
+echo exit code $wrapper_code
+
 echo input > $ledRed/trigger
 
-if [ $? -eq 0 ]
+
+
+if [[ "$wrapper_code" -eq 0 ]]
 then
     python -u blescan/main.py $BLESCAN_CONFIG_PATH
-else
-    echo wrapper returned error
+elif [[ "$wrapper_code" -eq 50 ]]
+then
     echo starting blescan with default config
-    python -u blescan/main.py $BLESCAN_FALLBACK_CONFIG
+    python -u blescan/main.py $BLESCAN_LOCAL_CONFIG
+else
+    echo wrapper returnet error \(exit code $wrapper_code \)
+    python -u blescan/main.py $BLESCAN_LOCAL_CONFIG
 fi
+
+exitcode=$?
 
 sleep 0.5
 
@@ -51,11 +61,10 @@ echo none > $ledGreen/trigger
 echo default-on > $ledRed/trigger
 echo 1 > $ledRed/brightness
 
-exitcode=$?
 
 echo blescan exit_code: $exitcode
 
-if [ $exitcode -eq 100 ]
+if [[ $exitcode -eq 100 ]]
 then
     sudo shutdown -h now
 fi
