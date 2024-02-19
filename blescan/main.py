@@ -70,14 +70,16 @@ def main(config_path: str='./config.ini'):
 
     while running:
         before = datetime.now()
-        devices = scanner.scan(1)
+        devices = scanner.scan(.97)
 
         scanend = datetime.now()
 
         scantime = scanend - before
 
         if scantime - timedelta(seconds=1) > timedelta(seconds=0.05):
-            logger.warn(f"scanning time is more than 5% from target (1s) {scantime}")
+            logger.warning(f"scanning time is more than 5% from target (1s) {scantime}")
+
+        logger.debug(f"scantime: {scantime}")
 
 
         counter.process_scan(devices)
