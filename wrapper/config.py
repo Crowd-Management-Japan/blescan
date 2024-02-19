@@ -6,6 +6,7 @@ class Config:
     id = 0
     url = ''
     do_not_update = 0
+    local_installation = False
 
 def read_config(path='./config.ini'):
     logging.debug(f"Parsing ini file {path}")
@@ -14,6 +15,7 @@ def read_config(path='./config.ini'):
 
     section = inifile["USER"]
 
+    Config.local_installation = int(section.get('local_installation', '0')) == 1
     Config.id = section.get('devID')
     Config.url = section.get('url')
 

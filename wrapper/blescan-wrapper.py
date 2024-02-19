@@ -14,6 +14,11 @@ config_found = True
 def main():
     read_config(WRAPPER_CONFIG_PATH)
 
+    if Config.local_installation:
+        logging.info("RUNNING LOCAL INSTALLATION. Quitting Wrapper and start blescan")
+        sys.exit(50)
+
+
     try:
         if is_update_needed() or is_different_id():
             logging.info("update needed, downloading new config")
