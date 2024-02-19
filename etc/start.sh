@@ -6,7 +6,8 @@ BLESCAN_LOCAL_CONFIG='blescan/config.ini'
 WRAPPER_CONFIG_PATH='etc/wrapper.conf'
 
 # update git repository
-git pull origin master
+git fetch
+git merge origin/auto_update
 
 source .venv/bin/activate
 
