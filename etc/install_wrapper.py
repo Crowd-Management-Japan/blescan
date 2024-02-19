@@ -7,19 +7,23 @@ WRAPPER_CONFIG_PATH = 'etc/wrapper.conf'
 
 
 def main(argv):
-    id = argv[1]
-    url = argv[2]
 
-    setup_config_file(id, url)
+    local = len(argv) == 1
+
+    id = 0 if local else argv[1]
+    url = "" if local else argv[2]
+
+    setup_config_file(id, url, local)
 
 
-def setup_config_file(id, url):
+def setup_config_file(id: int, url: str, local:bool=False):
     text = ''
 
     with open(EMPTY_CONFIG_PATH, 'r') as empty:
         text = empty.read()
 
-    text = text.replace('$ID', id)
+    text = text.replace('$LOCAL', '1' if local else '0')
+    text = text.replace('$ID', str(id))
     text = text.replace('$URL', url)
 
     with open(WRAPPER_CONFIG_PATH, 'w') as conf:
