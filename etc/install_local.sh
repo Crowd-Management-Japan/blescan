@@ -35,9 +35,9 @@ echo -------- completed --------
 echo -------- install systemd service --------
 
 # install systemd service
-service_file=`cat etc/service_template`
-service=`echo ${service_file//BLESCAN_DIRECTORY/$directory}`
-echo $service > etc/blescan.service
+cp etc/service_template etc/blescan.service
+sed "s|BLESCAN_DIRECTORY|$directory|g" etc/service_template > etc/blescan.service
+
 sudo cp -f etc/blescan.service /lib/systemd/system/
 sudo systemctl enable blescan.service
 
