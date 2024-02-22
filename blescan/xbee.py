@@ -127,7 +127,7 @@ class XBeeController:
         logger.info("--- starting XBee process ---")
 
         # determine role
-        self.is_sender = Config.XBee.my_label not in self.target_ids
+        self.is_sender = Config.XBee.my_label not in Config.XBee.target_ids
 
         self.process = mp.Process(target=self._run, daemon=True)
         self.process.start()

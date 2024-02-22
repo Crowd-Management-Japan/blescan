@@ -120,6 +120,7 @@ def receive_xbee_message(sender, text):
 
 def setup_xbee():
     logger.info("Setting up xbee")
+    xbee.set_message_received_callback(receive_xbee_message)
     xbee.start()
     
     if xbee.is_sender:
@@ -128,7 +129,6 @@ def setup_xbee():
         Config.Counting.storage.append(stor)
     else:
         logger.debug("setting message callback")
-        xbee.set_message_received_callback(receive_xbee_message)
 
 
 if __name__ == "__main__":
