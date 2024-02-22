@@ -1,8 +1,9 @@
-import threading
 from time import sleep
 from enum import IntEnum
 from typing import Dict
 import logging
+import multiprocessing as mp
+import threading
 
 logger = logging.getLogger('blescan.LED')
 
@@ -116,10 +117,10 @@ def get_red_function(state: Dict[LEDState, bool]) -> lambda led: None:
     if state.get(LEDState.XBEE_CRASH, False):
         return LED_TRIPLE
 
-    if state.get(LEDState.NO_XBEE_CONNECTION, False):
-        return LED_SLOW
     if state.get(LEDState.XBEE_STACKING, False):
         return LED_FAST
+    if state.get(LEDState.NO_XBEE_CONNECTION, False):
+        return LED_SLOW
     
 
 
@@ -139,9 +140,10 @@ class LEDCommunicator:
     def __init__(self):
         self.running = False
         self.code = LED_SETUP
-        self._states = {
+        self._states = mp.Manager().dict()
+        self._states.update({
             value: False for value in LEDState
-        }
+        })
         self._states[LEDState.SETUP] = True
         self._state_changed = True
         self.setup()
@@ -161,7 +163,6 @@ class LEDCommunicator:
             blink_function(led)
 
     def _start_thread(self):
-
         threading.Thread(target=lambda: self._blocking_single(self.green, lambda l: self.green_function(l)), daemon=True).start()
         threading.Thread(target=lambda: self._blocking_single(self.red, lambda l: self.red_function(l)), daemon=True).start()
 
@@ -181,7 +182,7 @@ class LEDCommunicator:
                 both_function(self.green, self.red)
 
 
-    def start_in_thread(self):
+    def start(self):
         logger.info("--- starting LED thread ---")
         if self.running:
             logger.error("LED thread already started")
@@ -189,7 +190,7 @@ class LEDCommunicator:
         
         self.running = True
 
-        self.thread = threading.Thread(target=self._start_thread, daemon=True)
+        self.thread = mp.Process(target=self._start_thread, daemon=True)
         self.thread.start()
 
     def enable_state(self, state):

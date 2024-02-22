@@ -1,5 +1,3 @@
-import asyncio
-
 import logging
 # setup logging
 logging.basicConfig(level=logging.ERROR, 
@@ -14,7 +12,7 @@ from BleCount import BleCount
 from BleBeacon import BleBeacon
 from storage import Storage
 from led import LEDCommunicator, LEDState
-from datetime import datetime
+from datetime import datetime, timedelta
 import util
 
 import sys
@@ -26,22 +24,24 @@ from xbee import decode_data, XBeeStorage, XBeeController
 
 import time
 
-comm = LEDCommunicator()
-internet = InternetController(led_communicator=comm)
-xbee = XBeeController(led_communicator=comm)
+led_communicator = LEDCommunicator()
+internet = InternetController(led_communicator=led_communicator)
+xbee = XBeeController(led_communicator=led_communicator)
 
 
 CODE_SHUTDOWN_DEVICE = 100
 
-async def main(config_path: str='./config.ini'):
+def main(config_path: str='./config.ini'):
     parse_ini(config_path)
-    comm.start_in_thread()
+    led_communicator.start()
 
     if Config.Counting.use_internet:
         setup_internet()
 
     if Config.XBee.use_xbee:
         setup_xbee()
+
+    logger.debug("setup BleBeacon")
 
     # setting up beacon functionality
     beacon_storage = Config.Beacon.storage
@@ -50,6 +50,7 @@ async def main(config_path: str='./config.ini'):
     beacon_threshold = Config.Beacon.threshold
     beacon = BleBeacon(beacon_target,beacon_scans, beacon_threshold, beacon_storage)
 
+    logger.debug("setup BleCount")
     # setting up counting functionality
     counting_storage = Config.Counting.storage
     threshold = Config.Counting.rssi_threshold
@@ -65,14 +66,23 @@ async def main(config_path: str='./config.ini'):
 
     logger.info("--- Startup complete. Begin scanning ---")
 
-    comm.disable_state(LEDState.SETUP)
+    led_communicator.disable_state(LEDState.SETUP)
 
     while running:
-        devices = await scanner.scan()
-
         before = datetime.now()
-        await counter.process_scan(devices)
+        devices = scanner.scan(.97)
 
+        scanend = datetime.now()
+
+        scantime = scanend - before
+
+        if scantime - timedelta(seconds=1) > timedelta(seconds=0.05):
+            logger.warning(f"scanning time is more than 5% from target (1s) {scantime}")
+
+        logger.debug(f"scantime: {scantime}")
+
+
+        counter.process_scan(devices)
         beacon.process_scan(devices)
         after = datetime.now()
         #logger.debug(f"processing took {after - before}")
@@ -90,7 +100,7 @@ def shutdown_blescan():
     internet.stop()
     xbee.stop()
     
-    comm.stop()
+    led_communicator.stop()
 
 def setup_internet():
     logger.debug("Setting up internet")
@@ -131,7 +141,7 @@ if __name__ == "__main__":
     exit_code = 1
 
     try:
-        exit_code = asyncio.run(main(config_path))
+        exit_code = main(config_path)
     except KeyboardInterrupt:
         pass
 

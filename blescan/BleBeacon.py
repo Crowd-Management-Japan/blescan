@@ -1,7 +1,7 @@
 from typing import Dict, List, Union
 from device import Device
 from storage import Storage
-from datetime import datetime
+from datetime import datetime, timedelta
 import config
 
 import logging
@@ -47,6 +47,7 @@ class BleBeacon:
         self.storages = storage
         self.macs = {} 
         self.beacons = {}
+        self.last_scan_save = datetime.min
 
     
     def accumulate(self) -> Dict[Device, int]:
@@ -110,6 +111,9 @@ class BleBeacon:
         if len(exited) > 0:
             self.store_devices(exited)
 
+        if datetime.now() - self.last_scan_save >= timedelta(seconds=1):
+            self.store_scan(filtered)
+
     def __str__(self) -> str:
         return self.name
 
@@ -122,6 +126,17 @@ class BleBeacon:
         mm_strings = [mm_string(dev) for dev in devices]
 
         return config.Config.Beacon.shutdown_id in mm_strings
+    
+    def store_scan(self, beacons):
+
+        id = config.Config.serial_number
+
+        self.last_scan_save = datetime.now().replace(microsecond=0)
+        logger.debug(f"exact beacon save: {self.last_scan_save}")
+        timestr = datetime.now().strftime("%H:%M:%S")
+
+        for storage in self.storages:
+            storage.save_beacon_scan(id, timestr, beacons)
 
     def store_devices(self, macs):
         """store results into all given storage instances"""
@@ -129,17 +144,16 @@ class BleBeacon:
         logger.info(f"beacons to store: {len(self.matches)}")
 
         # format for storing:
-        now = datetime.now()
-        time = now.replace(second=(now.second // 10)*10)
+        time = datetime.now()
         timestr = time.strftime("%H:%M:%S")
 
-        data_rows = []
+        id = config.Config.serial_number
 
         for storage in self.storages:
 
             for mac in macs:
                 manufacturer_data = self.macs[mac].get_manufacturer_data()
-                storage.save_from_beacon(timestr, self.staying_time[mac], manufacturer_data)
+                storage.save_beacon_stay(id, timestr, self.staying_time[mac], manufacturer_data)
                 del self.staying_time[mac]
 
 

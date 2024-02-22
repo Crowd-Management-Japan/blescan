@@ -1,16 +1,15 @@
 
 from storage import prepare_row_data_summary
 from datetime import datetime
-from queue import Queue
 from typing import List, Dict, Union
 import requests
-from threading import Thread
 from time import sleep
 import logging
 import datetime
 import util
 import config
 from led import LEDState, LEDCommunicator
+import multiprocessing as mp
 
 import json
 
@@ -24,20 +23,20 @@ INTERNET_QUEUE_SIZE = 1000
 class InternetController:
     """
     The internet controller manages the internet connection.
-    It can be started in a separated thread by calling the `start()`-method.
+    It can be started in a separated process by calling the `start()`-method.
     After doing this, messages can be enqueue by calling `enqueue_message(message)`.
     These messages will get sent to the specified `url` endpoint.
     When also given a LEDCommunicator, this instance will give information about its current state.
 
-    Stop the thread by calling `stop()`. This will terminate the loop safely, with trying to send all
+    Stop the process by calling `stop()`. This will terminate the loop safely, with trying to send all
     enqueued messages before exiting.
     """
 
     def __init__(self, url='', led_communicator:LEDCommunicator=None):
         self.url:str = url
         self.led_communicator: LEDCommunicator = led_communicator
-        self.message_queue = Queue()
-        self.thread: Thread
+        self.message_queue = mp.Queue()
+        self.process: mp.Process
         self.ready: bool = False
         self.running: bool = False
 
@@ -49,74 +48,76 @@ class InternetController:
 
     def start(self):
         """
-        Start a thread as a daemon. Only has effect, if the instance is not running yet.
+        Start a process as a daemon. Only has effect, if the instance is not running yet.
         """
         if self.running:
-            logger.error("Internet thread already running")
+            logger.error("Internet process already running")
         self.running = True
-        logger.info("--- starting Internet thread ---")
+        logger.info("--- starting Internet process ---")
 
-        self.thread = Thread(target=self._run, daemon=True)
-        self.thread.start()
+        self.process = mp.Process(target=self._run, daemon=True)
+        self.process.start()
+        logger.debug("internet process started")
 
     def stop(self):
         """
-        Stop the thread and terminate safely. Try to send remaining messages before exiting
+        Stop the process and terminate safely. Try to send remaining messages before exiting
         """
         if not self.running:
             return
-        logger.debug("internet thread stop call")
+        logger.debug("internet process stop call")
         self.running = False
-        self.thread.join()
-        logger.info("--- Internet thread shut down ---")
+        self.process.join()
+        logger.info("--- Internet process shut down ---")
 
     def enqueue_message(self, message: str):
         """
         Enqueue a message to be sent.
         If the Queue is already full, older data will be dropped to add this message
         """
-        if self.message_queue.unfinished_tasks >= INTERNET_QUEUE_SIZE:
+        if self.message_queue.qsize() >= INTERNET_QUEUE_SIZE:
             logger.warn("internet queue full. Dropping old data")
             self.message_queue.get()
-            self.message_queue.task_done()
         self.message_queue.put(message)
         
-        logger.debug(f"adding message to internet queue. size: {self.message_queue.unfinished_tasks}")
+        logger.debug(f"adding message to internet queue. size: {self.message_queue.qsize()}")
 
     def _run(self):
         """
-        Private method that is actually executed as a thread.
+        Private method that is actually executed as a process.
         """
         message = None
         while self.running:
 
-            self._set_state(LEDState.INTERNET_STACKING, self.message_queue.unfinished_tasks > INTERNET_STACKING_THRESHOLD)
+            self._set_state(LEDState.INTERNET_STACKING, self.message_queue.qsize() > INTERNET_STACKING_THRESHOLD)
 
             if message is not None:
                 success = self._send_message(message)
                 logger.debug(f"internet sending success: {success} ")
                 if success:
                     self._set_state(LEDState.NO_INTERNET_CONNECTION, False)
-                    self.message_queue.task_done()
                     message = None
                 else:
                     self._set_state(LEDState.NO_INTERNET_CONNECTION, True)
                     sleep(2)
 
-            elif self.message_queue.unfinished_tasks > 0:
+            elif self.message_queue.qsize() > 0:
                 logger.debug(f"retrieving next internet message")
                 message = self.message_queue.get()
         # end while
-            
 
-        logger.debug("internet thread stopping safely. Send remaining messages")
-        while self.message_queue.unfinished_tasks > 0:
-            logger.debug(f"internet remaining: {self.message_queue.unfinished_tasks}")
+
+        logger.debug("internet process stopping safely. Send remaining messages")            
+        # first still selected message. Otherwhise the task is never marked done and the process stucks
+        if message:
+            self._send_message(message, timeout=0.5)
+
+        while self.message_queue.qsize() > 0:
+            logger.debug(f"internet remaining: {self.message_queue.qsize()}")
             message = self.message_queue.get()
             self._send_message(message, timeout=0.5)
-            self.message_queue.task_done()
 
-        logger.debug("internet thread finished")
+        logger.debug("internet process finished")
             
 
     def _send_message(self, message: Dict, timeout=5) -> bool:
@@ -156,7 +157,7 @@ class InternetStorage:
     def __init__(self, controller: InternetController):
         self.com = controller
 
-    async def save_from_count(self, id: int, timestamp: datetime.datetime, rssi_list: List, close_threshold: int):
+    def save_count(self, id: int, timestamp: datetime.datetime, rssi_list: List, close_threshold: int):
 
 
         time_format = util.format_datetime_network(timestamp)

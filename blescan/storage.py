@@ -1,5 +1,3 @@
-import asyncio
-#from main import SERIAL_NUMBER
 import datetime
 import os
 import csv
@@ -43,10 +41,15 @@ class Storage:
         self.setup_file(filename_rssi, "DeviceID,Time,RSSI list")
         self.files['rssi'] = filename_rssi
 
-    def setup_beacon(self):
+    def setup_beacon_stay(self):
+        filename = f"{self.filename_base}_stay_time.csv"
+        self.setup_file(filename, "DeviceID,Time,Tag Name,Staying time, Average RSSI, Latitude, Longitude")
+        self.files['beacon_stay'] = filename
+
+    def setup_beacon_scan(self):
         filename = f"{self.filename_base}_beacon.csv"
-        self.setup_file(filename, "Time,Tag Name,Staying time, Average RSSI, Latitude, Longitude")
-        self.files['beacon'] = filename
+        self.setup_file(filename, "DeviceID, Time,Beacon_list")
+        self.files['beacon_scan'] = filename
 
     def setup_summary(self):
         filename = f"{self.filename_base}_summary.csv"
@@ -84,17 +87,20 @@ class Storage:
             csvwriter = csv.writer(f)
             csvwriter.writerow(row_data)
 
-    def save_rssi(self, row_data):
+    def _save_rssi(self, row_data):
         self.save_file('rssi', row_data)
 
-    def save_beacon(self, row_data):
-        self.save_file('beacon', row_data)
+    def _save_beacon_stay(self, row_data):
+        self.save_file('beacon_stay', row_data)
 
-    def save_summary(self, row_data):
+    def _save_beacon_scan(self, row_data):
+        self.save_file('beacon_scan', row_data)
+
+    def _save_summary(self, row_data):
         self.save_file('summary', row_data)
 
 
-    async def save_from_count(self, id: int, timestamp: datetime.datetime, rssi_list: List, close_threshold:int):
+    def save_count(self, id: int, timestamp: datetime.datetime, rssi_list: List, close_threshold:int):
         """
         Saves devices given by BleCount.
         This includes RSSI and summary
@@ -105,17 +111,28 @@ class Storage:
         rssi_row = prepare_row_data_rssi(id, time_format, rssi_list)
         summary_row = prepare_row_data_summary(id, time_format, rssi_list, close_threshold)
 
-        self.save_rssi(rssi_row)
-        self.save_summary(summary_row)
+        self._save_rssi(rssi_row)
+        self._save_summary(summary_row)
 
 
-    def save_from_beacon(self, time, rssi_list, manufacturer_data):
+    def save_beacon_scan(self, id, time, beacons):
+
+        def get_tagname(beacon):
+            return ''.join([beacon.get_major(), beacon.get_minor()])
+
+        tags = [get_tagname(beacon) for beacon in beacons]
+        tags.sort()
+        beacon_scan_row = prepare_row_data_beacon_scan(id, time, tags)
+
+        self._save_beacon_scan(beacon_scan_row)
+
+    def save_beacon_stay(self,id, time, rssi_list, manufacturer_data):
 
         # saves devices given by BleBeacon
         # this includes the beacon file
 
-        beacon_row = prepare_row_data_beacon(time, rssi_list, manufacturer_data)
-        self.save_beacon(beacon_row)
+        beacon_row = prepare_row_data_beacon(id, time, rssi_list, manufacturer_data)
+        self._save_beacon_stay(beacon_row)
 
     def __str__(self):
         return f"Storage({self.base_dir})"
@@ -125,7 +142,12 @@ class Storage:
 
     
 
+def prepare_row_data_beacon_scan(id, time, tag_list: List[str]):
+    # surround the list by ""
+    return [id, time, f"\"{','.join([str(_) for _ in tag_list])}\""]
+
 def prepare_row_data_rssi(id, time, rssi_list):
+    # surround the list by ""
     return [id, time, f"\"{','.join([str(_) for _ in rssi_list])}\""]
 
 def prepare_row_data_summary(id: int, time: str, rssi: List, close_threshold: int):
@@ -144,10 +166,10 @@ def prepare_row_data_summary(id: int, time: str, rssi: List, close_threshold: in
 
     return [id, time, close, count, avg, st, mini, maxi, config.Config.latitude, config.Config.longitude]
 
-def prepare_row_data_beacon(timestr, rssi_list, manufacturer_data):
+def prepare_row_data_beacon(id, timestr, rssi_list, manufacturer_data):
     average_rssi = mean(rssi_list)
     time = len(rssi_list)
 
     tagname = ''.join([manufacturer_data['major'], manufacturer_data['minor']])
 
-    return [timestr, tagname, time, average_rssi, config.Config.latitude, config.Config.longitude]
+    return [id, timestr, tagname, time, average_rssi, config.Config.latitude, config.Config.longitude]
