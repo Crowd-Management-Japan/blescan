@@ -41,8 +41,8 @@ sed "s|BLESCAN_DIRECTORY|$directory|g" etc/service_template > etc/blescan.servic
 sudo cp -f etc/blescan.service /lib/systemd/system/
 sudo systemctl enable blescan.service
 
-# add crontab for daily restart for every night 1 am
-(sudo crontab -l && echo "0 1 * * * reboot") | sudo crontab
+# add crontab for daily restart for every night 3 am
+(sudo crontab -l && echo "0 3 * * * /sbin/shutdown -r now") | sudo crontab
 
 echo -------- completed --------
 echo -------- run blescan installation --------
