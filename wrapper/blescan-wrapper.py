@@ -3,8 +3,7 @@ import requests
 import logging
 import sys
 import os
-
-logging.getLogger().setLevel(logging.DEBUG)
+from datetime import datetime
 
 WRAPPER_CONFIG_PATH = "./wrapper/config.ini"
 BLESCAN_CONFIG_PATH = "./etc/blescan_conf.ini"
@@ -102,6 +101,16 @@ def response_done():
     # give callback that this device is ready to use
     requests.post(get_url("setup/completed_{}"))
 
+def setup_logger():
+    filename = f"logs/log_{datetime.now().weekday()}.txt"
+    logging.getLogger().setLevel(logging.DEBUG)
+    file_formatter = logging.Formatter("%(levelname)s:%(name)s:%(message)s")
+    rootLogger = logging.getLogger()
+    fileHandler = logging.FileHandler(filename)
+    fileHandler.setFormatter(file_formatter)
+    consoleHandler = logging.StreamHandler()
+    rootLogger.addHandler(consoleHandler)
+    rootLogger.addHandler(fileHandler)
 
 if __name__ == "__main__":
 
@@ -110,6 +119,7 @@ if __name__ == "__main__":
         if len(sys.argv) > 2:
             BLESCAN_CONFIG_PATH = sys.argv[2]
 
+    setup_logger()
     
     logging.info("--- starting blescan wrapper ---")
 

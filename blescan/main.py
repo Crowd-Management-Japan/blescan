@@ -1,9 +1,19 @@
 import logging
-# setup logging
+from datetime import datetime, timedelta
+
+# setup logging (before any imports use it)
+
+filename = f"logs/log_{datetime.now().weekday()}.txt"
+logging.getLogger('blescan').setLevel(logging.DEBUG)
+file_formatter = logging.Formatter("%(levelname)s:%(name)s:%(message)s")
+fileHandler = logging.FileHandler(filename)
+fileHandler.setFormatter(file_formatter)
+
 logging.basicConfig(level=logging.ERROR, 
                     format=('%(name)s %(levelname)s %(filename)s: %(lineno)d:\t%(message)s'))
 logging.getLogger('blescan').setLevel(logging.DEBUG)
 logger = logging.getLogger('blescan')
+logger.addHandler(fileHandler)
 
 
 
@@ -12,7 +22,6 @@ from BleCount import BleCount
 from BleBeacon import BleBeacon
 from storage import Storage
 from led import LEDCommunicator, LEDState
-from datetime import datetime, timedelta
 import util
 
 import sys
