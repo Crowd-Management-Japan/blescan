@@ -1,6 +1,7 @@
 # Blescan files
 etc/wrapper.conf
 etc/blescan.conf
+logs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
