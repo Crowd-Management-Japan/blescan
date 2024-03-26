@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 # setup logging (before any imports use it)
 
-filename = f"logs/log_{datetime.now().weekday()}.txt"
+filename = f"logs/log_newest.txt"
 logging.getLogger('blescan').setLevel(logging.DEBUG)
 file_formatter = logging.Formatter("%(levelname)s:%(name)s:%(message)s")
 fileHandler = logging.FileHandler(filename)

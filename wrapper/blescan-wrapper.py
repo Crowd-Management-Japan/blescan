@@ -3,6 +3,7 @@ import requests
 import logging
 import sys
 import os
+import shutil
 from datetime import datetime
 
 WRAPPER_CONFIG_PATH = "./wrapper/config.ini"
@@ -12,6 +13,9 @@ config_found = True
 
 def main():
     read_config(WRAPPER_CONFIG_PATH)
+
+    if Config.upload_last_config:
+        upload_logfile()
 
     if Config.local_installation:
         logging.info("RUNNING LOCAL INSTALLATION. Quitting Wrapper and start blescan")
@@ -101,8 +105,44 @@ def response_done():
     # give callback that this device is ready to use
     requests.post(get_url("setup/completed_{}"))
 
+def upload_logfile():
+    logging.debug("uploading logfile")
+    if Config.local_installation:
+        logging.debug("Cannot upload logfile with local installation")
+        return
+    
+
+    file = "logs/log.txt"
+    endpoint = f"{Config.url}/log/upload_{Config.id}/{file}"
+
+    files = {file: open(file, "rb")}
+
+    requests.post(endpoint, files=files)
+
+
+def delete_old_logs(num_to_keep=5):
+    pass
+
+    
+
+def save_last_log():
+    lastlog = f"logs/log_newest.txt"
+    if not os.path.exists(lastlog):
+        return
+    today = datetime.now()
+    datestr = f"{today.day:02}"
+    filename = f"logs/log_{datestr}.txt"
+    with open(filename, "a") as file:
+        with open(lastlog, "r") as last:
+            file.writelines(last.readlines())
+        # afterwards truncate the last one
+        with open(lastlog, "w"):
+            pass
+
 def setup_logger():
-    filename = f"logs/log_{datetime.now().weekday()}.txt"
+    os.makedirs('logs', exist_ok=True)
+    save_last_log()
+    filename = f"logs/log_newest.txt"
     logging.getLogger().setLevel(logging.DEBUG)
     file_formatter = logging.Formatter("%(levelname)s:%(name)s:%(message)s")
     rootLogger = logging.getLogger()
@@ -119,9 +159,13 @@ if __name__ == "__main__":
         if len(sys.argv) > 2:
             BLESCAN_CONFIG_PATH = sys.argv[2]
 
+
     setup_logger()
     
-    logging.info("--- starting blescan wrapper ---")
+
+    logging.info("----------------------------------------")
+    logging.info(f"## blescan wrapper starting time: {datetime.now()}")
+    logging.info("----------------------------------------")
 
     pwd = os.getcwd()
 

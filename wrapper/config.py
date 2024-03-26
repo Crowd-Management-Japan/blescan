@@ -8,6 +8,8 @@ class Config:
     do_not_update = 0
     local_installation = False
 
+    upload_last_config = False
+
 def read_config(path='./config.ini'):
     logging.debug(f"Parsing ini file {path}")
     inifile = configparser.ConfigParser()
@@ -20,6 +22,7 @@ def read_config(path='./config.ini'):
     Config.url = section.get('url')
 
     Config.do_not_update = int(section.get('ignore_config_update', '0')) == 1
+    Config.upload_last_config = int(section.get('upload_last_logfile', '0')) == 1
 
     logging.debug("parsing complete")
 
