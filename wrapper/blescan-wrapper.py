@@ -112,15 +112,19 @@ def upload_logfile():
         return
     
 
-    file = "logs/log.txt"
-    endpoint = f"{Config.url}/log/upload_{Config.id}/{file}"
+    file = "logs/log_upload.txt"
+    endpoint = f"log/upload_{Config.id}"
 
-    files = {file: open(file, "rb")}
+    files = {"log": open(file, "rb")}
 
-    requests.post(endpoint, files=files)
+    response = requests.post(get_url(endpoint), files=files)
+
+    if response.status_code == 200:
+        logging.info("logfile upload succeeded")
 
 
 def delete_old_logs(num_to_keep=5):
+    # TODO
     pass
 
     
@@ -132,19 +136,24 @@ def save_last_log():
     today = datetime.now()
     datestr = f"{today.day:02}"
     filename = f"logs/log_{datestr}.txt"
+    upload = f"logs/log_upload.txt"
+    shutil.copy(lastlog, upload)
+
+    with open(lastlog, "r") as last:
+        lines = last.readlines()
     with open(filename, "a") as file:
-        with open(lastlog, "r") as last:
-            file.writelines(last.readlines())
-        # afterwards truncate the last one
-        with open(lastlog, "w"):
-            pass
+        file.writelines(lines)
+
+    # afterwards truncate the last one
+    with open(lastlog, "w"):
+        pass
 
 def setup_logger():
     os.makedirs('logs', exist_ok=True)
     save_last_log()
     filename = f"logs/log_newest.txt"
     logging.getLogger().setLevel(logging.DEBUG)
-    file_formatter = logging.Formatter("%(levelname)s:%(name)s:%(message)s")
+    file_formatter = logging.Formatter("%(asctime)s:%(levelname)s:%(name)s:%(message)s")
     rootLogger = logging.getLogger()
     fileHandler = logging.FileHandler(filename)
     fileHandler.setFormatter(file_formatter)
@@ -164,7 +173,7 @@ if __name__ == "__main__":
     
 
     logging.info("----------------------------------------")
-    logging.info(f"## blescan wrapper starting time: {datetime.now()}")
+    logging.info(f"## blescan wrapper starting ##")
     logging.info("----------------------------------------")
 
     pwd = os.getcwd()

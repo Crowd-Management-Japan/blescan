@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 filename = f"logs/log_newest.txt"
 logging.getLogger('blescan').setLevel(logging.DEBUG)
-file_formatter = logging.Formatter("%(levelname)s:%(name)s:%(message)s")
+file_formatter = logging.Formatter("%(asctime)s:%(levelname)s:%(name)s:%(message)s")
 fileHandler = logging.FileHandler(filename)
 fileHandler.setFormatter(file_formatter)
 
