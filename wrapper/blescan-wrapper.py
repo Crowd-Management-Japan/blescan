@@ -102,7 +102,12 @@ def response_done():
     requests.post(get_url("setup/completed_{}"))
 
 def setup_logger():
+    
+    if not os.path.exists("logs"):
+        os.mkdir("logs")
+
     filename = f"logs/log_{datetime.now().weekday()}.txt"
+
     logging.getLogger().setLevel(logging.DEBUG)
     file_formatter = logging.Formatter("%(levelname)s:%(name)s:%(message)s")
     rootLogger = logging.getLogger()
