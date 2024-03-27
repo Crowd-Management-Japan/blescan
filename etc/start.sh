@@ -5,10 +5,23 @@ BLESCAN_CONFIG_PATH='etc/blescan.conf'
 BLESCAN_LOCAL_CONFIG='blescan/config.ini'
 WRAPPER_CONFIG_PATH='etc/wrapper.conf'
 
-# update git repository
+
+# check if the requirements.txt are going to change when pulling 
+DIFF=`git diff --name-only origin/master -- requirements.txt`
+
+# actually update code
 git pull origin master
 
 source .venv/bin/activate
+
+if [[ -n  $DIFF ]]
+then
+    echo "requirements changed. Doing pip install"
+    pip install -r requirements.txt
+fi
+
+
+
 
 # led0 = green, led1 = red
 ledGreen='/sys/class/leds/led0'
