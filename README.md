@@ -83,5 +83,5 @@ Feel free to open Issues, or resolve them and open merge requests.
 
 # Suggested references
 If you found this project useful and/or it contributed to your research, we would be grateful if you could cite this work:<br />
-`Tanida, S., Feliciani, C., Jia, X., Kim, H., Aikoh, T., & Nishinari, K. (2024). Investigating the congestion levels on a mesoscopic scale during outdoor events. Journal of Disaster Research, 19(2), 347-358.`<br />
+[Tanida, S., Feliciani, C., Jia, X., Kim, H., Aikoh, T., & Nishinari, K. (2024). Investigating the congestion levels on a mesoscopic scale during outdoor events. Journal of Disaster Research, 19(2), 347-358.](https://www.fujipress.jp/jdr/dr/dsstr001900020347/)<br />
 The same work may be also useful if you want to learn more about scienficic applications to our software and/or case studies where the software was employed. Please be also aware that the work above used an early version of this code and some parameters may be different to what used here.
