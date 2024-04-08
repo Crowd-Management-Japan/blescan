@@ -19,7 +19,7 @@ This happens automatically when a Raspberry Pi is configured in this way has an 
 To reduce costs, when supplying Raspi's with possible internet connections (we used UMTS with data sims), the devices can also build a zigbee network.
 If this is set up correctly, all information will be sent to a subset of devices that have a possible uplink.
 
-## Mode 2:
+## Mode 2: beacon detection annd tracking
 The second possible mode filters scanned devices on a given uuid. 
 For this we used iBeacons, which can be configured with an app to send exactly the same data all the time. 
 These beacons were handed out to customers of the location where the tracking should take place. 
@@ -31,7 +31,7 @@ The values can be configured using the config file.
 
 # Privacy
 As this topic is about tracking people and analysing crowd densities, privacy is an important part to think about.
-Luckily - or sadly, depending on your point of view - it is generally not possible to track people using bluetooth over a longer perion of time.
+Luckily - or sadly, depending on your point of view - it is generally not possible to track people using bluetooth over a long period of time.
 Modern smartphones have inbuilt privacy features that use randomized mac addresses when advertising themself with bluetooth. 
 This means that 'different' devices, detected on two points in time at a different place, could be actually the same smartphone.
 
@@ -80,3 +80,8 @@ When running the backend, you should not run `blescan/main.py` directly. Instead
 
 # Contributing
 Feel free to open Issues, or resolve them and open merge requests.
+
+# Suggested references
+If you found this project useful and/or it contributed to your research, we would be grateful if you could cite this work:
+Tanida, S., Feliciani, C., Jia, X., Kim, H., Aikoh, T., & Nishinari, K. (2024). Investigating the congestion levels on a mesoscopic scale during outdoor events. Journal of Disaster Research, 19(2), 347-358.
+The same work may be also useful if you want to learn more about scienficic applications to our software and/or case studies where the software was employed. Please be also aware that the work above used an early version of this code and some parameters may be different to what used here.
