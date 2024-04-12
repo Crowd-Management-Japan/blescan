@@ -56,6 +56,8 @@ def auto_find_port():
     for port in ports:
         if port.manufacturer == "FTDI" and port.product == "FT231X USB UART":
             possibles.append(port.device)
+        if port.manufacturer == "Silicon Labs" and port.product =="CP2102 USB to UART Bridge Controller":
+            possibles.append(port.device)
 
     if len(possibles) == 0:
         logger.warn("No port automatically detected. Return default /dev/ttyUSB0")
