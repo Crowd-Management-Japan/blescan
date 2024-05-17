@@ -50,7 +50,7 @@ def main(config_path: str='./config.ini'):
 
     if Config.Counting.use_internet:
         setup_internet()
-
+    
     if Config.XBee.use_xbee:
         setup_xbee()
 
