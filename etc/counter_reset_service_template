@@ -1,0 +1,11 @@
+[Unit]
+Description=Delete restart counter file before shutdown
+Before=shutdown.target reboot.target halt.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/true
+ExecStop=/bin/rm -f BLESCAN_DIRECTORY/etc/counter.txt
+
+[Install]
+WantedBy=multi-user.target
