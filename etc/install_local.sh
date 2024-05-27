@@ -32,17 +32,30 @@ sudo setcap cap_net_raw+e $blpy
 sudo setcap cap_net_admin+eip $blpy
 
 echo -------- completed --------
-echo -------- install systemd service --------
+echo -------- install systemd services --------
 
-# install systemd service
-cp etc/service_template etc/blescan.service
-sed "s|BLESCAN_DIRECTORY|$directory|g" etc/service_template > etc/blescan.service
+# install systemd service for blescan
+cp etc/blescan_service_template etc/blescan.service
+sed "s|BLESCAN_DIRECTORY|$directory|g" etc/blescan_service_template > etc/blescan.service
 
 sudo cp -f etc/blescan.service /lib/systemd/system/
 sudo systemctl enable blescan.service
 
-# add crontab for daily restart for every night 3 am
-(sudo crontab -l && echo "0 3 * * * /sbin/shutdown -r now") | sudo crontab
+# add service deleting the restart counter at shutdown
+cp etc/counter_reset_service_template etc/counter_reset.service
+sed "s|BLESCAN_DIRECTORY|$directory|g" etc/counter_reset_service_template > etc/counter_reset.service
+
+sudo cp -f etc/counter_reset.service /lib/systemd/system/
+sudo systemctl enable counter_reset.service
+
+# add crontab for daily reset:
+# device is rebooted at 2 am (network connection can be slow for LTE dongles)
+# service is rebooted at 3 am  (at this time LTE device will be operating)
+echo -------- add crontab commands --------
+CRON_REBOOT="0 2 * * * /sbin/shutdown -r now"
+(sudo crontab -l | grep -Fxq "$CRON_REBOOT") || (sudo crontab -l; echo "$CRON_REBOOT") | sudo crontab -
+CRON_RESTART="0 3 * * * systemctl restart blescan"
+(sudo crontab -l | grep -Fxq "$CRON_RESTART") || (sudo crontab -l; echo "$CRON_RESTART") | sudo crontab -
 
 echo -------- completed --------
 echo -------- run blescan installation --------
