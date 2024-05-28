@@ -161,6 +161,7 @@ class LEDCommunicator:
     def _blocking_single(self, led, blink_function):
         while self.running:
             blink_function(led)
+            sleep(0.5)
 
     def _start_thread(self):
         threading.Thread(target=lambda: self._blocking_single(self.green, lambda l: self.green_function(l)), daemon=True).start()
@@ -180,6 +181,7 @@ class LEDCommunicator:
 
             if both_function is not None:
                 both_function(self.green, self.red)
+            sleep(.25)
 
 
     def start(self):
@@ -190,7 +192,7 @@ class LEDCommunicator:
         
         self.running = True
 
-        self.thread = threading.Thread(name='send_cloud_thd', target=self._start_thread,daemon=True)
+        self.thread = mp.Process(target=self._start_thread, daemon=True)
         self.thread.start()
 
     def enable_state(self, state):
