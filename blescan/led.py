@@ -190,7 +190,7 @@ class LEDCommunicator:
         
         self.running = True
 
-        self.thread = mp.Process(target=self._start_thread, daemon=True)
+        self.thread = threading.Thread(name='send_cloud_thd', target=self._start_thread,daemon=True)
         self.thread.start()
 
     def enable_state(self, state):

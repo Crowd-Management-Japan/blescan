@@ -1,8 +1,7 @@
 from typing import List, Any, Union
 from device import Device
 from datetime import datetime
-from collections import namedtuple
-from collections import Counter
+from collections import namedtuple, Counter
 from storage import Storage
 
 import config
@@ -20,7 +19,7 @@ class BleCount:
     When saving, this accumulation is cleared to mimic the next longer scan.
     """
 
-    def __init__(self, rssi_threshold: int = -100, rssi_close_threshold = -50, delta:int=10, storage: Union[Storage,List[Storage]] = []):
+    def __init__(self, rssi_threshold: int = -100, rssi_close_threshold = -50, delta:int=10, storage: Union[Storage,List[Storage]] = [], static_ratio: int = 7):
         """
         Create an instance to keep track of the total amount of devices.
 
@@ -43,6 +42,7 @@ class BleCount:
         self.rssi_threshold = rssi_threshold
         self.close_threshold = rssi_close_threshold
         self.delta = delta
+        self.static_ratio = static_ratio
         self.last_update = datetime.now()
         self.storages = storage
         self.static_list = []
@@ -60,7 +60,7 @@ class BleCount:
         # Assumes multiple detections in a single scan
         for device in filtered:
             mac = device.get_mac()
-            self.static_list.append(device.get_mac()) 
+            self.static_list.append(device.get_mac())
             if mac not in self.scanned_devices.keys():
                 self.scanned_devices[mac] = device
             else:
@@ -96,7 +96,7 @@ class BleCount:
         serial = config.Config.serial_number
 
         # Threshold of existence probability to be counted
-        static_ratio  = 7
+        static_ratio  = self.static_ratio
 
         # Count the number of occurrences of MAC addresses
         mac_counter = Counter(self.static_list)
@@ -106,10 +106,6 @@ class BleCount:
 
         # Get a list of devices based on filtered MAC addresses
         static_list = [dev for dev in self.scanned_devices.values() if dev.get_mac() in filtered_macs]
-
-        print('ここです:')
-        for device in static_list:
-            print(f'MAC: {device.get_mac()}, RSSI: {device.get_rssi()}')
 
         for storage in self.storages:
             storage.save_count(serial, time, self.get_rssi_list(), self.close_threshold, static_list)

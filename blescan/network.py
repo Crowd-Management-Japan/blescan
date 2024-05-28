@@ -9,7 +9,9 @@ import datetime
 import util
 import config
 from led import LEDState, LEDCommunicator
-import multiprocessing as mp
+# import multiprocessing as mp
+import threading
+import queue
 
 import json
 
@@ -35,8 +37,9 @@ class InternetController:
     def __init__(self, url='', led_communicator:LEDCommunicator=None):
         self.url:str = url
         self.led_communicator: LEDCommunicator = led_communicator
-        self.message_queue = mp.Queue()
-        self.process: mp.Process
+        self.message_queue = queue.Queue(30)
+        # self.process: mp.Process
+        self.process: threading.Thread
         self.ready: bool = False
         self.running: bool = False
 
@@ -55,7 +58,8 @@ class InternetController:
         self.running = True
         logger.info("--- starting Internet process ---")
 
-        self.process = mp.Process(target=self._run, daemon=True)
+        # self.process = mp.Process(target=self._run, daemon=True)
+        self.process = threading.Thread(name='send_cloud_thd', target=self._run,daemon=True)
         self.process.start()
         logger.debug("internet process started")
 
@@ -75,11 +79,12 @@ class InternetController:
         Enqueue a message to be sent.
         If the Queue is already full, older data will be dropped to add this message
         """
+        # 止めてるところ
         if self.message_queue.qsize() >= INTERNET_QUEUE_SIZE:
             logger.warn("internet queue full. Dropping old data")
             self.message_queue.get()
+            self.message_queue.task_done()
         self.message_queue.put(message)
-        # print('------------ここだ',message)
         
         logger.debug(f"adding message to internet queue. size: {self.message_queue.qsize()}")
 
@@ -90,7 +95,7 @@ class InternetController:
         message = None
         while self.running:
 
-            self._set_state(LEDState.INTERNET_STACKING, self.message_queue.qsize() > INTERNET_STACKING_THRESHOLD)
+            # self._set_state(LEDState.INTERNET_STACKING, self.message_queue.qsize() > INTERNET_STACKING_THRESHOLD)
 
             if message is not None:
                 success = self._send_message(message)
@@ -105,6 +110,7 @@ class InternetController:
             elif self.message_queue.qsize() > 0:
                 logger.debug(f"retrieving next internet message")
                 message = self.message_queue.get()
+                self.message_queue.task_done()
         # end while
 
 
@@ -113,9 +119,11 @@ class InternetController:
         if message:
             self._send_message(message, timeout=0.5)
 
+        # 止めてるところ
         while self.message_queue.qsize() > 0:
             logger.debug(f"internet remaining: {self.message_queue.qsize()}")
             message = self.message_queue.get()
+            self.message_queue.task_done()
             self._send_message(message, timeout=0.5)
 
         logger.debug("internet process finished")
