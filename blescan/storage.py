@@ -157,8 +157,6 @@ def prepare_row_data_summary(id: int, time: str, rssi: List, close_threshold: in
     static_total = len(static_list)
     static_close = len([dev for dev in static_list if dev.get_rssi() > close_threshold])
 
-    print('ちゃんと出力されてるといいな:',static_total,static_close)
-
     st = None
     avg = None
     mini = None

@@ -194,4 +194,7 @@ class InternetStorage:
                   'latitude': config.Config.latitude, 
                   'longitude': config.Config.longitude}
 
+        print('total count:',summary[3],'close count:',summary[2])
+        print('static total count:',summary[10],'static close count:',summary[11])
+
         self.com.enqueue_message(params)

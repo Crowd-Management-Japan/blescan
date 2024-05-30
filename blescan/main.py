@@ -84,7 +84,7 @@ def main(config_path: str='./config.ini'):
 
     while running:
         before = datetime.now()
-        devices = scanner.scan(.9)
+        devices = scanner.scan(.93)
 
         scanend = datetime.now()
 
@@ -97,15 +97,9 @@ def main(config_path: str='./config.ini'):
 
 
         counter.process_scan(devices)
-        first = datetime.now()
-        # print(f"ここだよ、counter :{first - scanend}")
-
         beacon.process_scan(devices)
         after = datetime.now()
-        # print(f"ここだよ、beacon :{after - first}")
-
-        after = datetime.now()
-        logger.debug(f"processing took {after - scanend}")
+        # logger.debug(f"processing took {after - scanend}")
 
         if beacon.stop_call:
             logger.info("Shutdown beacon scanned. Shutting down blescan.")
