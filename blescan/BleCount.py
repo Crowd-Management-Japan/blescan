@@ -92,8 +92,12 @@ class BleCount:
         serial = config.Config.serial_number
 
         for storage in self.storages:
-            storage.save_count(serial, time, self.get_rssi_list(), self.close_threshold)
-
+            try:
+                storage.save_count(serial, time, self.get_rssi_list(), self.close_threshold)
+            except PermissionError as e:
+                logger.debug(f"No writing permission for {storage}")
+            except Exception as e:
+                logger.debug(f"Unkwnow writing error: {e}")
         self.scanned_devices.clear()
 
         # if not using the cut time (whole 10 second steps) it might happen, that steps will be skipped
