@@ -43,14 +43,14 @@ echo input > $ledRed/trigger
 
 if [[ "$wrapper_code" -eq 0 ]]
 then
-    sudo python3 -u blescan/main.py $BLESCAN_CONFIG_PATH
+    python -u blescan/main.py $BLESCAN_CONFIG_PATH
 elif [[ "$wrapper_code" -eq 50 ]]
 then
     echo starting blescan with default config
-    sudo python3 -u blescan/main.py $BLESCAN_LOCAL_CONFIG
+    python -u blescan/main.py $BLESCAN_LOCAL_CONFIG
 else
     echo wrapper returnet error \(exit code $wrapper_code \)
-    sudo python3 -u blescan/main.py $BLESCAN_LOCAL_CONFIG
+    python -u blescan/main.py $BLESCAN_LOCAL_CONFIG
 fi
 
 exitcode=$?

@@ -108,14 +108,10 @@ class BleCount:
         static_list = [dev for dev in self.scanned_devices.values() if dev.get_mac() in filtered_macs]
 
         for storage in self.storages:
-            try:
-                storage.save_count(serial, time, self.get_rssi_list(), self.close_threshold)
-            except PermissionError as e:
-                logger.debug(f"No writing permission for {storage}")
-            except Exception as e:
-                logger.debug(f"Unkwnow writing error: {e}")
-                
+            storage.save_count(serial, time, self.get_rssi_list(), self.close_threshold, static_list)
+
         self.scanned_devices.clear()
+        self.static_list.clear()
 
         # if not using the cut time (whole 10 second steps) it might happen, that steps will be skipped
         self.last_update = time
