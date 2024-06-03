@@ -48,7 +48,7 @@ class Storage:
 
     def setup_beacon_scan(self):
         filename = f"{self.filename_base}_beacon.csv"
-        self.setup_file(filename, "DeviceID, Time,Beacon_list")
+        self.setup_file(filename, "DeviceID, Time,Beacon list,RSSI list")
         self.files['beacon_scan'] = filename
 
     def setup_summary(self):
@@ -117,12 +117,10 @@ class Storage:
 
     def save_beacon_scan(self, id, time, beacons):
 
-        def get_tagname(beacon):
-            return ''.join([beacon.get_major(), beacon.get_minor()])
-
-        tags = [get_tagname(beacon) for beacon in beacons]
-        tags.sort()
-        beacon_scan_row = prepare_row_data_beacon_scan(id, time, tags)
+        tags_rssi = [(beacon.get_major() + beacon.get_minor(), beacon.get_rssi()) for beacon in beacons]
+                                               
+        tags_rssi.sort()
+        beacon_scan_row = prepare_row_data_beacon_scan(id, time, tags_rssi)
 
         self._save_beacon_scan(beacon_scan_row)
 
@@ -142,9 +140,11 @@ class Storage:
 
     
 
-def prepare_row_data_beacon_scan(id, time, tag_list: List[str]):
+def prepare_row_data_beacon_scan(id, time, tag_rssi_list: List[tuple]):
     # surround the list by ""
-    return [id, time, f"\"{','.join([str(_) for _ in tag_list])}\""]
+    tags = [tag for tag, rssi in tag_rssi_list]
+    rssi_list = [rssi for tag, rssi in tag_rssi_list]
+    return [id, time, f"\"{','.join(tags)}\"", f"\"{','.join(map(str, rssi_list))}\""]
 
 def prepare_row_data_rssi(id, time, rssi_list):
     # surround the list by ""
