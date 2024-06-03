@@ -3,7 +3,7 @@ import requests
 import logging
 import sys
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 WRAPPER_CONFIG_PATH = "./wrapper/config.ini"
 BLESCAN_CONFIG_PATH = "./etc/blescan_conf.ini"
@@ -127,15 +127,17 @@ def setup_logger():
     if not os.path.exists("logs"):
         os.mkdir("logs")
 
-    filename = f"logs/log_{str(datetime.now().day).zfill(2)}.txt"
+    previous_month = datetime.now() - timedelta(days=30)
+    old_filename = f"logs/log_{previous_month.strftime('%m%d')}.txt"
+    new_filename = f"logs/log_{datetime.now().strftime('%m%d')}.txt"
 
-    if os.path.exists(filename):
-        os.remove(filename)
+    if os.path.exists(old_filename):
+        os.remove(old_filename)
 
     logging.getLogger().setLevel(logging.DEBUG)
     file_formatter = logging.Formatter("%(levelname)s:%(name)s:%(message)s")
     rootLogger = logging.getLogger()
-    fileHandler = logging.FileHandler(filename)
+    fileHandler = logging.FileHandler(new_filename)
     fileHandler.setFormatter(file_formatter)
     consoleHandler = logging.StreamHandler()
     rootLogger.addHandler(consoleHandler)
