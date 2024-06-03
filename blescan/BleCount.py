@@ -1,7 +1,7 @@
 from typing import List, Any, Union
 from device import Device
 from datetime import datetime
-from collections import namedtuple, Counter
+from collections import namedtuple
 from storage import Storage
 
 import config
@@ -19,7 +19,7 @@ class BleCount:
     When saving, this accumulation is cleared to mimic the next longer scan.
     """
 
-    def __init__(self, rssi_threshold: int = -100, rssi_close_threshold = -50, delta:int=10, storage: Union[Storage,List[Storage]] = [], static_ratio: int = 7):
+    def __init__(self, rssi_threshold: int = -100, rssi_close_treshold = -50, delta:int=10, storage: Union[Storage,List[Storage]] = []):
         """
         Create an instance to keep track of the total amount of devices.
 
@@ -40,15 +40,12 @@ class BleCount:
         if type(storage) is not list: storage = [storage]
         self.scanned_devices = {}
         self.rssi_threshold = rssi_threshold
-        self.close_threshold = rssi_close_threshold
+        self.close_threshold = rssi_close_treshold
         self.delta = delta
-        self.static_ratio = static_ratio
         self.last_update = datetime.now()
         self.storages = storage
-        self.static_list = []
+        
 
-
-    # (WebPage : Define the Threshold below which devices will not be counted at all)
     def filter_devices(self, devices: List[Device]) -> List[Device]:
         """filter out devices below the minimum rssi threshold"""
         return [dev for dev in devices if dev.get_rssi() > self.rssi_threshold]
@@ -57,10 +54,9 @@ class BleCount:
         """process one scan interval: accumulates devices."""
         filtered = self.filter_devices(devices)
 
-        # Assumes multiple detections in a single scan
+        
         for device in filtered:
             mac = device.get_mac()
-            self.static_list.append(device.get_mac())
             if mac not in self.scanned_devices.keys():
                 self.scanned_devices[mac] = device
             else:
@@ -95,18 +91,6 @@ class BleCount:
         
         serial = config.Config.serial_number
 
-        # Threshold of existence probability to be counted
-        static_ratio  = self.static_ratio
-
-        # Count the number of occurrences of MAC addresses
-        mac_counter = Counter(self.static_list)
-
-        # Filtering only MAC addresses whose number of occurrences exceeds a threshold
-        filtered_macs = [mac for mac, count in mac_counter.items() if count >= static_ratio]
-
-        # Get a list of devices based on filtered MAC addresses
-        static_list = [dev for dev in self.scanned_devices.values() if dev.get_mac() in filtered_macs]
-
         for storage in self.storages:
             try:
                 storage.save_count(serial, time, self.get_rssi_list(), self.close_threshold)
@@ -114,7 +98,6 @@ class BleCount:
                 logger.debug(f"No writing permission for {storage}")
             except Exception as e:
                 logger.debug(f"Unkwnow writing error: {e}")
-                
         self.scanned_devices.clear()
 
         # if not using the cut time (whole 10 second steps) it might happen, that steps will be skipped

@@ -19,11 +19,9 @@ class Config:
         rssi_threshold: int = -100
         rssi_close_threshold: int = rssi_threshold
         delta: int = 10
-        static_ratio: int = 7
         storage: List = []
         use_internet: bool = False
         internet_url: str = None
-
 
     class XBee:
         use_xbee: bool = False
@@ -91,7 +89,6 @@ def _parse_counting_settings(inifile):
     Config.Counting.rssi_threshold = int(section.get('rssi_threshold', -100))
     Config.Counting.rssi_close_threshold = int(section.get('rssi_close_threshold', Config.Counting.rssi_threshold))
     Config.Counting.delta = int(section.get('delta', 10))
-    Config.Counting.static_ratio = int(section.get('static_ratio', Config.Counting.static_ratio))
     Config.Counting.storage += _get_storage_paths(inifile, section, 'storage')
     
     # return value is string. bool of non empty string ('0' aswell) results in True

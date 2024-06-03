@@ -23,8 +23,8 @@ class Device():
 
         
     def get_mac(self):
-        return self.bluepy_device.addr    
-
+        return self.bluepy_device.addr
+        
     def get_rssi(self):
         return self.bluepy_device.rssi
 

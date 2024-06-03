@@ -50,7 +50,7 @@ def main(config_path: str='./config.ini'):
 
     if Config.Counting.use_internet:
         setup_internet()
-    
+
     if Config.XBee.use_xbee:
         setup_xbee()
 
@@ -69,8 +69,7 @@ def main(config_path: str='./config.ini'):
     threshold = Config.Counting.rssi_threshold
     close_threshold = Config.Counting.rssi_close_threshold
     delta = Config.Counting.delta
-    static_ratio = Config.Counting.static_ratio
-    counter = BleCount(threshold, close_threshold, delta, counting_storage, static_ratio)
+    counter = BleCount(threshold, close_threshold, delta, counting_storage)
 
     scanner = Scanner()
 
@@ -84,7 +83,7 @@ def main(config_path: str='./config.ini'):
 
     while running:
         before = datetime.now()
-        devices = scanner.scan(.93)
+        devices = scanner.scan(.97)
 
         scanend = datetime.now()
 
@@ -99,7 +98,7 @@ def main(config_path: str='./config.ini'):
         counter.process_scan(devices)
         beacon.process_scan(devices)
         after = datetime.now()
-        # logger.debug(f"processing took {after - scanend}")
+        #logger.debug(f"processing took {after - before}")
 
         if beacon.stop_call:
             logger.info("Shutdown beacon scanned. Shutting down blescan.")
