@@ -7,10 +7,28 @@ from datetime import datetime
 
 WRAPPER_CONFIG_PATH = "./wrapper/config.ini"
 BLESCAN_CONFIG_PATH = "./etc/blescan_conf.ini"
+RESTART_COUNTER_PATH = "./etc/counter.txt"
+
+RESTART_LIMIT = 3
 
 config_found = True
 
 def main():
+    # count the number of times the code has been restarted
+    # when the number of restarts has been exceeded a complete reboot is triggered
+    # this is to fix hardware or rare issues which is typically solved through a reboot
+    if file_exists(RESTART_COUNTER_PATH):
+        with open(RESTART_COUNTER_PATH, 'r') as file:
+            content = file.read().strip()
+            restart_counter = int(content) + 1
+            if restart_counter >= RESTART_LIMIT:
+                os.system('sudo shutdown -r now')
+        with open(RESTART_COUNTER_PATH, 'w') as file:
+            file.write(str(restart_counter))
+    else:
+        with open(RESTART_COUNTER_PATH, 'w') as file:
+            file.write("0")
+
     read_config(WRAPPER_CONFIG_PATH)
 
     if Config.local_installation:
@@ -42,6 +60,9 @@ def main():
     logging.info("--- starting blescan ---")
     # the actual start is done by the start.sh script, so just exit
     sys.exit(0)
+
+def file_exists(file_path):
+    return os.path.exists(file_path)
 
 def is_different_id():
     wrapper = read_id(WRAPPER_CONFIG_PATH)
