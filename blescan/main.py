@@ -7,7 +7,7 @@ import os
 if not os.path.exists("logs"):
     os.mkdir("logs")
     
-filename = f"logs/log_{str(datetime.now().day).zfill(2)}.txt"
+filename = f"logs/log_{datetime.now().strftime('%m%d')}.txt"
 logging.getLogger('blescan').setLevel(logging.DEBUG)
 file_formatter = logging.Formatter("%(levelname)s:%(name)s:%(message)s")
 fileHandler = logging.FileHandler(filename)
