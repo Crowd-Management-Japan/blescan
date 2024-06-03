@@ -127,7 +127,10 @@ def setup_logger():
     if not os.path.exists("logs"):
         os.mkdir("logs")
 
-    filename = f"logs/log_{datetime.now().weekday()}.txt"
+    filename = f"logs/log_{str(datetime.now().day).zfill(2)}.txt"
+
+    if os.path.exists(filename):
+        os.remove(filename)
 
     logging.getLogger().setLevel(logging.DEBUG)
     file_formatter = logging.Formatter("%(levelname)s:%(name)s:%(message)s")
