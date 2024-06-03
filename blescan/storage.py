@@ -100,7 +100,7 @@ class Storage:
         self.save_file('summary', row_data)
 
 
-    def save_count(self, id: int, timestamp: datetime.datetime, rssi_list: List, close_threshold:int):
+    def save_count(self, id: int, timestamp: datetime.datetime, rssi_list: List, close_threshold:int, static_list):
         """
         Saves devices given by BleCount.
         This includes RSSI and summary
@@ -109,7 +109,7 @@ class Storage:
         time_format = util.format_datetime_old(timestamp)
 
         rssi_row = prepare_row_data_rssi(id, time_format, rssi_list)
-        summary_row = prepare_row_data_summary(id, time_format, rssi_list, close_threshold)
+        summary_row = prepare_row_data_summary(id, time_format, rssi_list, close_threshold, static_list)
 
         self._save_rssi(rssi_row)
         self._save_summary(summary_row)
@@ -150,9 +150,13 @@ def prepare_row_data_rssi(id, time, rssi_list):
     # surround the list by ""
     return [id, time, f"\"{','.join([str(_) for _ in rssi_list])}\""]
 
-def prepare_row_data_summary(id: int, time: str, rssi: List, close_threshold: int):
+def prepare_row_data_summary(id: int, time: str, rssi: List, close_threshold: int, static_list: List):
+
     count = len(rssi)
     close = len([_ for _ in rssi if _ > close_threshold])
+    static_total = len(static_list)
+    static_close = len([dev for dev in static_list if dev.get_rssi() > close_threshold])
+
     st = None
     avg = None
     mini = None
@@ -164,7 +168,8 @@ def prepare_row_data_summary(id: int, time: str, rssi: List, close_threshold: in
         mini = min(rssi)
         maxi = max(rssi)
 
-    return [id, time, close, count, avg, st, mini, maxi, config.Config.latitude, config.Config.longitude]
+    return [id, time, close, count, avg, st, mini, maxi, config.Config.latitude, config.Config.longitude, static_total, static_close]
+    # return [id, time, close, count, avg, st, mini, maxi, config.Config.latitude, config.Config.longitude, static_total, static_close]
 
 def prepare_row_data_beacon(id, timestr, rssi_list, manufacturer_data):
     average_rssi = mean(rssi_list)
