@@ -8,17 +8,14 @@ if not os.path.exists("logs"):
     os.mkdir("logs")
     
 filename = f"logs/log_{datetime.now().strftime('%m%d')}.txt"
-logging.getLogger('blescan').setLevel(logging.DEBUG)
+logging.getLogger('blescan').setLevel(logging.ERROR)
+logging.basicConfig(level=logging.ERROR, 
+                    format=('%(name)s %(levelname)s %(filename)s: %(lineno)d:\t%(message)s'))
 file_formatter = logging.Formatter("%(levelname)s:%(name)s:%(message)s")
 fileHandler = logging.FileHandler(filename)
 fileHandler.setFormatter(file_formatter)
-
-logging.basicConfig(level=logging.ERROR, 
-                    format=('%(name)s %(levelname)s %(filename)s: %(lineno)d:\t%(message)s'))
-logging.getLogger('blescan').setLevel(logging.DEBUG)
 logger = logging.getLogger('blescan')
 logger.addHandler(fileHandler)
-
 
 
 from scanning import Scanner
