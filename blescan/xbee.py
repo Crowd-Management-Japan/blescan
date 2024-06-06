@@ -43,10 +43,22 @@ def decode_data(data: str) -> Dict[str, Any]:
 
     s = data.split(",")
 
-    return {"id": int(s[0]), "timestamp": s[1],"date": s[2], "time": s[3], "close": int(s[4]), "count": int(s[5]), 
-            'rssi_avg':float(s[6]),'rssi_std':float(s[7]),'rssi_min':int(s[8]),'rssi_max':int(s[9]), 
-            'latitude': util.float_or_else(s[10], None), 
-            'longitude': util.float_or_else(s[11], None)}
+    return {
+        "id": int(s[0]), 
+        "timestamp": s[1],
+        "date": s[2], 
+        "time": s[3], 
+        "close": int(s[4]), 
+        "count": int(s[5]), 
+        'rssi_avg':float(s[6]),
+        'rssi_std':float(s[7]),
+        'rssi_min':int(s[8]),
+        'rssi_max':int(s[9]), 
+        'static_total': int(s[10]),
+        'static_close': int(s[11]),
+        'latitude': util.float_or_else(s[12], None), 
+        'longitude': util.float_or_else(s[13], None)
+        }
 
 def auto_find_port():
     ports = serial.tools.list_ports.comports()
@@ -302,18 +314,31 @@ class XBeeStorage:
         self.com = com
 
     
-    def save_count(self, id: int, timestamp: datetime, rssi_list: List, close_threshold: int):
+    def save_count(self, id: int, timestamp: datetime, rssi_list: List, close_threshold: int, static_list):
 
-        summary = prepare_row_data_summary(id, timestamp, rssi_list, close_threshold)
+        summary = prepare_row_data_summary(id, timestamp, rssi_list, close_threshold, static_list)
         # %Y%m%d,%H%M%S
         date = datetime.now().strftime("%Y%m%d")
 
         time_format = util.format_datetime_network(timestamp)
         old_format = util.format_datetime_old(timestamp)
 
-        params = {'id':id, 'timestamp': time_format, 'date':date,'time':old_format.replace(':', ''), 'close':summary[2],'count':summary[3],
-                                    'rssi_avg':summary[4],'rssi_std':summary[5],'rssi_min':summary[6],'rssi_max':summary[7], 
-                                    'latitude': Config.latitude, 'longitude': Config.longitude}
+        params = {
+            'id':id, 
+            'timestamp': time_format, 
+            'date':date,
+            'time':old_format.replace(':', ''), 
+            'close':summary[2],
+            'count':summary[3],
+            'rssi_avg':summary[4],
+            'rssi_std':summary[5],
+            'rssi_min':summary[6],
+            'rssi_max':summary[7], 
+            'static_total': summary[10],
+            'static_close': summary[11],
+            'latitude': Config.latitude, 
+            'longitude': Config.longitude
+            }
 
         #self.com.encode_and_send(params)
         message = encode_data(params)
