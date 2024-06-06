@@ -132,7 +132,7 @@ def setup_logger():
     if os.path.exists(filename):
         os.remove(filename)
 
-    logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger().setLevel(logging.ERROR)
     file_formatter = logging.Formatter("%(levelname)s:%(name)s:%(message)s")
     rootLogger = logging.getLogger()
     fileHandler = logging.FileHandler(filename)
