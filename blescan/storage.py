@@ -30,7 +30,7 @@ class Storage:
         if not os.path.exists(self.base_dir):
             os.makedirs(self.base_dir)
         self.date = datetime.datetime.today()
-        self.filename_base = f"{self.base_dir}/ACC{config.Config.serial_number}_{self.date.strftime('%Y%m%d')}"
+        self.filename_base = f"{self.base_dir}/ACC{str(config.Config.serial_number).zfill(2)}_{self.date.strftime('%Y%m%d')}"
 
         # keep track of what files are already registered
         self.files = {}
