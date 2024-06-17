@@ -157,24 +157,32 @@ class InternetStorage:
     def __init__(self, controller: InternetController):
         self.com = controller
 
-    def save_count(self, id: int, timestamp: datetime.datetime, rssi_list: List, close_threshold: int):
+    def save_count(self, id: int, timestamp: datetime.datetime, rssi_list: List, close_threshold: int, static_list):
 
 
         time_format = util.format_datetime_network(timestamp)
         old_format = util.format_datetime_old(timestamp)
 
         # return value is "DeviceID,Time,Close count,Total count,Avg RSSI,Std RSSI,Min RSSI,Max RSSI"
-        summary = prepare_row_data_summary(id, time_format, rssi_list, close_threshold)
-
+        summary = prepare_row_data_summary(id, time_format, rssi_list, close_threshold, static_list)
         # {'device_id': '45', 'date': '20231020', 'time': '104000', 'count': '26', 'total': '26', 'rssi_avg': '-93.615', 'rssi_std': '3.329', 'rssi_min': '-99', 'rssi_max': '-85'}
         
         # %Y%m%d,%H%M%S
         date = datetime.datetime.now().strftime("%Y%m%d")
 
-        
-
-        params = {'id':id,'timestamp': time_format,'date':date,'time':old_format.replace(':', ''),'close':summary[2],'count':summary[3],
-                                    'rssi_avg':summary[4],'rssi_std':summary[5],'rssi_min':summary[6],'rssi_max':summary[7],
-                                    'latitude': config.Config.latitude, 'longitude': config.Config.longitude}
+        params = {'id':id,
+                  'timestamp': time_format,
+                  'date':date,
+                  'time':old_format.replace(':', ''),
+                  'close':summary[2],
+                  'count':summary[3],
+                  'rssi_avg':summary[4],
+                  'rssi_std':summary[5],
+                  'rssi_min':summary[6],
+                  'rssi_max':summary[7],
+                  'static_total':summary[10],
+                  'static_close':summary[11],
+                  'latitude': config.Config.latitude, 
+                  'longitude': config.Config.longitude}
 
         self.com.enqueue_message(params)
