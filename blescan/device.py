@@ -12,6 +12,7 @@ class Device():
         self.major = ""
         self.minor = ""
         self.tx = ""
+        self.rssi = None
 
         for (adTypeCode, description, valueText) in self.scan_data:
             if description == "Manufacturer":

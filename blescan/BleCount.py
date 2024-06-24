@@ -48,7 +48,7 @@ class BleCount:
         self.static_list = []
 
 
-    # (WebPage : Define the Threshold below which devices will not be counted at all)
+    # (Webpage : Define the threshold below which devices will not be counted at all)
     def filter_devices(self, devices: List[Device]) -> List[Device]:
         """filter out devices below the minimum rssi threshold"""
         return [dev for dev in devices if dev.get_rssi() > self.rssi_threshold]
@@ -111,8 +111,13 @@ class BleCount:
             print(f'MAC: {device.get_mac()}, RSSI: {device.get_rssi()}')
 
         for storage in self.storages:
-            storage.save_count(serial, time, self.get_rssi_list(), self.close_threshold, static_list)
-
+            try:
+                storage.save_count(serial, time, self.get_rssi_list(), self.close_threshold, static_list)
+            except PermissionError as e:
+                logger.debug(f"No writing permission for {storage}")
+            except Exception as e:
+                logger.debug(f"Unkwnow writing error: {e}")
+        
         self.scanned_devices.clear()
         self.static_list.clear()
 
