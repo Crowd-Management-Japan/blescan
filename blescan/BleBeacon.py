@@ -136,12 +136,7 @@ class BleBeacon:
         timestr = datetime.now().strftime("%H:%M:%S")
 
         for storage in self.storages:
-            try:
-                storage.save_beacon_scan(id, timestr, beacons)
-            except PermissionError as e:
-                logger.debug(f"No writing permission for {storage}")
-            except Exception as e:
-                logger.debug(f"Unkwnow writing error: {e}")
+            storage.save_beacon_scan(id, timestr, beacons)
 
     def store_devices(self, macs):
         """store results into all given storage instances"""
@@ -154,16 +149,12 @@ class BleBeacon:
 
         id = config.Config.serial_number
 
-        for mac in macs:
-            for storage in self.storages:
-                try:
-                    manufacturer_data = self.macs[mac].get_manufacturer_data()
-                    storage.save_beacon_stay(id, timestr, self.staying_time[mac], manufacturer_data)
-                except PermissionError as e:
-                    logger.debug(f"No writing permission for {storage}")
-                except Exception as e:
-                    logger.debug(f"Unkwnow writing error: {e}")
-            del self.staying_time[mac]
+        for storage in self.storages:
+
+            for mac in macs:
+                manufacturer_data = self.macs[mac].get_manufacturer_data()
+                storage.save_beacon_stay(id, timestr, self.staying_time[mac], manufacturer_data)
+                del self.staying_time[mac]
 
 
         

@@ -302,19 +302,33 @@ class XBeeStorage:
         self.com = com
 
     
-    def save_count(self, id: int, timestamp: datetime, rssi_list: List, close_threshold: int):
+    def save_count(self, id: int, timestamp: datetime, rssi_list: List, close_threshold: int, static_list):
 
-        summary = prepare_row_data_summary(id, timestamp, rssi_list, close_threshold)
+        summary = prepare_row_data_summary(id, timestamp, rssi_list, close_threshold, static_list)
         # %Y%m%d,%H%M%S
         date = datetime.now().strftime("%Y%m%d")
 
         time_format = util.format_datetime_network(timestamp)
         old_format = util.format_datetime_old(timestamp)
 
-        params = {'id':id, 'timestamp': time_format, 'date':date,'time':old_format.replace(':', ''), 'close':summary[2],'count':summary[3],
-                                    'rssi_avg':summary[4],'rssi_std':summary[5],'rssi_min':summary[6],'rssi_max':summary[7], 
-                                    'latitude': Config.latitude, 'longitude': Config.longitude}
+        params = {
+            'id':id, 
+            'timestamp': time_format, 
+            'date':date,
+            'time':old_format.replace(':', ''), 
+            'close':summary[2],
+            'count':summary[3],
+            'rssi_avg':summary[4],
+            'rssi_std':summary[5],
+            'rssi_min':summary[6],
+            'rssi_max':summary[7], 
+            'static_total': summary[10],
+            'static_close': summary[11],
+            'latitude': Config.latitude, 
+            'longitude': Config.longitude
+            }
 
         #self.com.encode_and_send(params)
         message = encode_data(params)
         self.com.enqueue_message(message)
+
