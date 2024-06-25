@@ -161,6 +161,7 @@ class LEDCommunicator:
     def _blocking_single(self, led, blink_function):
         while self.running:
             blink_function(led)
+            sleep(0.5)
 
     def _start_thread(self):
         threading.Thread(target=lambda: self._blocking_single(self.green, lambda l: self.green_function(l)), daemon=True).start()
@@ -180,6 +181,7 @@ class LEDCommunicator:
 
             if both_function is not None:
                 both_function(self.green, self.red)
+            sleep(0.25)
 
 
     def start(self):

@@ -13,9 +13,9 @@ class BleBeacon:
     Class that analyses the beacons.
 
     The BleBeacon works by only storing informations about near bluetooth beacons with a specific uuid.
-    In every 1s scan interval beacons are detected.
-    For every completed round of scans, a threshold determines wether a beacon is considered close or not.
-    For example we do 8 1s scans. If a beacon is detected more than 4 times, it is considered present in this area.
+    In every (1s) scan interval beacons are detected.
+    For every completed round of scans, a threshold determines whether a beacon is considered close or not.
+    For example we do 8 (1s) scans. If a beacon is detected more than 4 times, it is considered present in this area.
     """
 
     stop_call = False
@@ -41,7 +41,8 @@ class BleBeacon:
         self.threshold = threshold
         self.scans = scans
         self.devices = {_: [] for _ in range(scans)}
-        self.staying_time = {}
+        self.rssi_list = {}
+        self.detected_time = {}
         self.current_scan = 0
         self.matches = []
         self.storages = storage
@@ -69,13 +70,14 @@ class BleBeacon:
         """ detect devices that are detected more often or equal to the threshold amount"""
         self.matches = [dev for dev, count in accumulation.items() if count >= self.threshold]
 
-    def update_staying_time(self):
+    def update_time_rssi(self):
         for mac in self.matches:
             device = self.macs[mac]
-            if mac not in self.staying_time.keys():
-                self.staying_time[mac] = [device.get_rssi()]
+            if mac not in self.rssi_list.keys():
+                self.detected_time[mac] = datetime.now()
+                self.rssi_list[mac] = [device.get_rssi()]
             else:
-                self.staying_time[mac].append(device.get_rssi())
+                self.rssi_list[mac].append(device.get_rssi())
 
     def update(self, scanned_devices):
         """update the list of devices. Will add devices to the current timestep and then increase the timestep by one"""
@@ -93,7 +95,7 @@ class BleBeacon:
         return beacons
 
     def process_scan(self, devices: List[Device]):
-        """process a single 1s scan interval"""
+        """process a single scan interval"""
 
         filtered = self.filter_devices(devices)
 
@@ -104,9 +106,9 @@ class BleBeacon:
         acc = self.accumulate()
 
         self.detect_matches(acc)
-        self.update_staying_time()
+        self.update_time_rssi()
 
-        exited = [mac for mac in self.staying_time.keys() if mac not in self.matches]
+        exited = [mac for mac in self.rssi_list.keys() if mac not in self.matches]
 
         if len(exited) > 0:
             self.store_devices(exited)
@@ -157,13 +159,15 @@ class BleBeacon:
         for mac in macs:
             for storage in self.storages:
                 try:
+                    staying_time = round((datetime.now() - self.detected_time[mac]).total_seconds())
                     manufacturer_data = self.macs[mac].get_manufacturer_data()
-                    storage.save_beacon_stay(id, timestr, self.staying_time[mac], manufacturer_data)
+                    storage.save_beacon_stay(id, timestr, staying_time, self.rssi_list[mac], manufacturer_data)
                 except PermissionError as e:
                     logger.debug(f"No writing permission for {storage}")
                 except Exception as e:
                     logger.debug(f"Unkwnow writing error: {e}")
-            del self.staying_time[mac]
+            del self.rssi_list[mac]
+            del self.detected_time[mac]
 
 
         
