@@ -5,7 +5,6 @@ from typing import List, Dict, Union
 import requests
 from time import sleep
 import logging
-import datetime
 import util
 import config
 from led import LEDState, LEDCommunicator
@@ -157,32 +156,39 @@ class InternetStorage:
     def __init__(self, controller: InternetController):
         self.com = controller
 
-    def save_count(self, id: int, timestamp: datetime.datetime, rssi_list: List, close_threshold: int, static_list):
+    def save_count(self, id: int, timestamp: datetime, scantime: float, close_threshold: int, rssi_list: List, instantaneous_counts: List, static_list: List):
 
 
         time_format = util.format_datetime_network(timestamp)
         old_format = util.format_datetime_old(timestamp)
 
-        # return value is "DeviceID,Time,Close count,Total count,Avg RSSI,Std RSSI,Min RSSI,Max RSSI"
-        summary = prepare_row_data_summary(id, time_format, rssi_list, close_threshold, static_list)
-        # {'device_id': '45', 'date': '20231020', 'time': '104000', 'count': '26', 'total': '26', 'rssi_avg': '-93.615', 'rssi_std': '3.329', 'rssi_min': '-99', 'rssi_max': '-85'}
+        # return value is "ID,Time,Scantime,Tot.all,Tot.close,Inst.all,Inst.close,Stat.all,Stat.close,Avg RSSI,Std RSSI,Min RSSI,Max RSSI,Latitude,Longitude"
+        summary = prepare_row_data_summary(id, time_format, scantime, close_threshold, rssi_list, instantaneous_counts, static_list)
+        # {'device_id': '45', 'date': '20231020', 'time': '104000', 'scantime': '9.126',
+        #  'tot_all': '26', 'tot_close': '26', 'inst_all': '26', 'inst_close': '26', 'stat_all': '26', 'stat_close': '26',
+        #  'rssi_avg': '-93.615', 'rssi_std': '3.329', 'rssi_min': '-99', 'rssi_max': '-85', 'lat': '-3.52842', 'lon': '-15.52842'}
         
         # %Y%m%d,%H%M%S
-        date = datetime.datetime.now().strftime("%Y%m%d")
+        date = datetime.now().strftime("%Y%m%d")
 
         params = {'id':id,
-                  'timestamp': time_format,
+                  'timestamp':time_format,
                   'date':date,
                   'time':old_format.replace(':', ''),
-                  'close':summary[2],
+                  'scantime':scantime,
                   'count':summary[3],
-                  'rssi_avg':summary[4],
-                  'rssi_std':summary[5],
-                  'rssi_min':summary[6],
-                  'rssi_max':summary[7],
-                  'static_total':summary[10],
-                  'static_close':summary[11],
+                  'close':summary[4],
+                  'inst_all':summary[5],
+                  'inst_close':summary[6],
+                  'static_total':summary[7],
+                  'static_close':summary[8],
+                  'rssi_avg':summary[9],
+                  'rssi_std':summary[10],
+                  'rssi_min':summary[11],
+                  'rssi_max':summary[12],
                   'latitude': config.Config.latitude, 
-                  'longitude': config.Config.longitude}
+                  'longitude': config.Config.longitude,
+                  'rssi_thresh':close_threshold
+                  }
 
         self.com.enqueue_message(params)

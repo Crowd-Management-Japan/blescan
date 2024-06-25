@@ -70,7 +70,6 @@ def main(config_path: str='./config.ini'):
 
     scanner = Scanner()
 
-
     exit_code = 0
     running = True
 
@@ -79,22 +78,19 @@ def main(config_path: str='./config.ini'):
     led_communicator.disable_state(LEDState.SETUP)
 
     while running:
-        before = datetime.now()
-        devices = scanner.scan(.97)
+        start = datetime.now()
+        devices = scanner.scan(1.00)
+        endscan = datetime.now()
 
-        scanend = datetime.now()
-
-        scantime = scanend - before
-
-        if scantime - timedelta(seconds=1) > timedelta(seconds=0.05):
-            logger.warning(f"scanning time is more than 5% from target (1s) {scantime}")
-
+        scantime = (endscan - start).total_seconds()
         logger.debug(f"scantime: {scantime}")
 
+        #if scantime - timedelta(seconds=1) > timedelta(seconds=0.05):
+        #    logger.warning(f"scanning time is more than 5% from target (1s) {scantime}")
 
-        counter.process_scan(devices)
+        counter.process_scan(devices, scantime)
         beacon.process_scan(devices)
-        after = datetime.now()
+        
         #logger.debug(f"processing took {after - before}")
 
         if beacon.stop_call:

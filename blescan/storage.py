@@ -38,22 +38,22 @@ class Storage:
 
     def setup_rssi(self):
         filename_rssi = f"{self.filename_base}_rssi.csv"
-        self.setup_file(filename_rssi, "DeviceID,Time,RSSI list")
+        self.setup_file(filename_rssi, "ID,Time,RSSI list")
         self.files['rssi'] = filename_rssi
 
     def setup_beacon_stay(self):
         filename = f"{self.filename_base}_stay_time.csv"
-        self.setup_file(filename, "DeviceID,Time,Tag Name,Staying time, Average RSSI, Latitude, Longitude")
+        self.setup_file(filename, "ID,Time,Tag Name,Staying time,Average RSSI,Latitude,Longitude")
         self.files['beacon_stay'] = filename
 
     def setup_beacon_scan(self):
         filename = f"{self.filename_base}_beacon.csv"
-        self.setup_file(filename, "DeviceID, Time,Beacon list,RSSI list")
+        self.setup_file(filename, "ID,Time,Beacon list,RSSI list")
         self.files['beacon_scan'] = filename
 
     def setup_summary(self):
         filename = f"{self.filename_base}_summary.csv"
-        self.setup_file(filename, "DeviceID,Time,Close count,Total count,Avg RSSI,Std RSSI,Min RSSI,Max RSSI, Latitude, Longitude")
+        self.setup_file(filename, "ID,Time,Scantime,Tot.all,Tot.close,Inst.all,Inst.close,Stat.all,Stat.close,Avg RSSI,Std RSSI,Min RSSI,Max RSSI,Latitude,Longitude")
         self.files['summary'] = filename
 
 
@@ -99,8 +99,7 @@ class Storage:
     def _save_summary(self, row_data):
         self.save_file('summary', row_data)
 
-
-    def save_count(self, id: int, timestamp: datetime.datetime, rssi_list: List, close_threshold:int, static_list):
+    def save_count(self, id: int, timestamp: datetime.datetime, scantime: float, close_threshold: int, rssi_list: List, instantaneous_counts: List, static_list: List):
         """
         Saves devices given by BleCount.
         This includes RSSI and summary
@@ -109,7 +108,7 @@ class Storage:
         time_format = util.format_datetime_old(timestamp)
 
         rssi_row = prepare_row_data_rssi(id, time_format, rssi_list)
-        summary_row = prepare_row_data_summary(id, time_format, rssi_list, close_threshold, static_list)
+        summary_row = prepare_row_data_summary(id, time_format, scantime, close_threshold, rssi_list, instantaneous_counts, static_list)
 
         self._save_rssi(rssi_row)
         self._save_summary(summary_row)
@@ -124,12 +123,12 @@ class Storage:
 
         self._save_beacon_scan(beacon_scan_row)
 
-    def save_beacon_stay(self,id, time, rssi_list, manufacturer_data):
+    def save_beacon_stay(self, id, time, staying_time, rssi_list, manufacturer_data):
 
         # saves devices given by BleBeacon
         # this includes the beacon file
 
-        beacon_row = prepare_row_data_beacon(id, time, rssi_list, manufacturer_data)
+        beacon_row = prepare_row_data_beacon(id, time, staying_time, rssi_list, manufacturer_data)
         self._save_beacon_stay(beacon_row)
 
     def __str__(self):
@@ -150,30 +149,32 @@ def prepare_row_data_rssi(id, time, rssi_list):
     # surround the list by ""
     return [id, time, f"\"{','.join([str(_) for _ in rssi_list])}\""]
 
-def prepare_row_data_summary(id: int, time: str, rssi: List, close_threshold: int, static_list: List):
+def prepare_row_data_summary(id: int, time: str, scantime: int, close_threshold: int, rssi: List, instantaneous_counts: List, static_list: List):
 
-    count = len(rssi)
-    close = len([_ for _ in rssi if _ > close_threshold])
-    static_total = len(static_list)
-    static_close = len([dev for dev in static_list if dev.get_rssi() > close_threshold])
+    tot_all = len(rssi)
+    tot_close = len([_ for _ in rssi if _ > close_threshold])
+    inst_all = round(mean(instantaneous_counts["all"]),3)
+    inst_close = round(mean(instantaneous_counts["close"]),3)
+    stat_all = len(static_list)
+    stat_close = len([dev for dev in static_list if dev.get_rssi() > close_threshold])
 
-    st = None
+    std = None
     avg = None
     mini = None
     maxi = None
     
-    if count > 0:
-        st = pstdev(rssi)
-        avg = mean(rssi)
+    if tot_all > 0:
+        std = round(pstdev(rssi),3)
+        avg = round(mean(rssi),3)
         mini = min(rssi)
         maxi = max(rssi)
 
-    return [id, time, close, count, avg, st, mini, maxi, config.Config.latitude, config.Config.longitude, static_total, static_close]
+    return [id, time, scantime, tot_all, tot_close, inst_all, inst_close, stat_all, stat_close, avg, std, mini, maxi, config.Config.latitude, config.Config.longitude]
 
-def prepare_row_data_beacon(id, timestr, rssi_list, manufacturer_data):
+def prepare_row_data_beacon(id, timestr, staying_time, rssi_list, manufacturer_data):
     average_rssi = mean(rssi_list)
-    time = len(rssi_list)
+    #time = len(rssi_list)
 
     tagname = ''.join([manufacturer_data['major'], manufacturer_data['minor']])
 
-    return [id, timestr, tagname, time, average_rssi, config.Config.latitude, config.Config.longitude]
+    return [id, timestr, tagname, staying_time, "{:.3f}".format(average_rssi), config.Config.latitude, config.Config.longitude]
