@@ -43,10 +43,10 @@ def decode_data(data: str) -> Dict[str, Any]:
 
     s = data.split(",")
 
-    return {"id": int(s[0]), "timestamp": s[1],"date": s[2], "time": s[3], "close": int(s[4]), "count": int(s[5]), 
-            'rssi_avg':float(s[6]),'rssi_std':float(s[7]),'rssi_min':int(s[8]),'rssi_max':int(s[9]), 
-            'latitude': util.float_or_else(s[10], None), 
-            'longitude': util.float_or_else(s[11], None)}
+    return {'id': int(s[0]), 'timestamp': s[1], 'date': s[2], 'time': s[3], 'scantime': float(s[4]),
+            'count': int(s[5]), 'close': int(s[6]), 'inst_all': float(s[7]), 'inst_close': float(s[8]), 'static_total': int(s[9]), 'static_close': int(s[10]), 
+            'rssi_avg': float(s[11]), 'rssi_std': float(s[12]), 'rssi_min': int(s[13]), 'rssi_max': int(s[14]), 'rssi_thresh': int(s[15]),
+            'latitude': util.float_or_else(s[16], None), 'longitude': util.float_or_else(s[17], None)}
 
 def auto_find_port():
     ports = serial.tools.list_ports.comports()
