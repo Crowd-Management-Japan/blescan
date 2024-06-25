@@ -82,7 +82,7 @@ def main(config_path: str='./config.ini'):
 
     while running:
         before = datetime.now()
-        devices = scanner.scan(.97)
+        devices = scanner.scan(.93)
 
         scanend = datetime.now()
 
