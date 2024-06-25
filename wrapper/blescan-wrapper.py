@@ -9,7 +9,7 @@ WRAPPER_CONFIG_PATH = "./wrapper/config.ini"
 BLESCAN_CONFIG_PATH = "./etc/blescan_conf.ini"
 RESTART_COUNTER_PATH = "./etc/counter.txt"
 
-RESTART_LIMIT = 50
+RESTART_LIMIT = 500
 
 config_found = True
 
