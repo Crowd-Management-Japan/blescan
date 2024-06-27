@@ -175,8 +175,5 @@ def prepare_row_data_summary(id: int, time: str, scans: int, scantime: float, rs
 
 def prepare_row_data_beacon(id, timestr, staying_time, rssi_list, manufacturer_data):
     average_rssi = mean(rssi_list)
-    #time = len(rssi_list)
-
     tagname = ''.join([manufacturer_data['major'], manufacturer_data['minor']])
-
     return [id, timestr, tagname, staying_time, "{:.3f}".format(average_rssi), Config.latitude, Config.longitude]

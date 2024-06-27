@@ -8,9 +8,7 @@ import logging
 import util
 from config import Config
 from led import LEDState, LEDCommunicator
-#import multiprocessing as mp
-import threading
-import queue
+import multiprocessing as mp
 
 import json
 
@@ -36,10 +34,8 @@ class InternetController:
     def __init__(self, url='', led_communicator:LEDCommunicator=None):
         self.url:str = url
         self.led_communicator: LEDCommunicator = led_communicator
-        #self.message_queue = mp.Queue()
-        #self.process: mp.Process
-        self.message_queue = queue.Queue()
-        self.process: threading.Thread
+        self.message_queue = mp.Queue()
+        self.process: mp.Process
         self.ready: bool = False
         self.running: bool = False
 
@@ -58,8 +54,7 @@ class InternetController:
         self.running = True
         logger.info("--- starting Internet process ---")
 
-        #self.process = mp.Process(target=self._run, daemon=True)
-        self.process = threading.Thread(name='send_cloud_thd', target=self._run,daemon=True)
+        self.process = mp.Process(target=self._run, daemon=True)
         self.process.start()
         logger.debug("internet process started")
 
@@ -109,7 +104,6 @@ class InternetController:
             elif self.message_queue.qsize() > 0:
                 logger.debug(f"retrieving next internet message")
                 message = self.message_queue.get()
-                self.message_queue.task_done()
         # end while
 
 
@@ -121,7 +115,6 @@ class InternetController:
         while self.message_queue.qsize() > 0:
             logger.debug(f"internet remaining: {self.message_queue.qsize()}")
             message = self.message_queue.get()
-            self.message_queue.task_done()
             self._send_message(message, timeout=0.5)
 
         logger.debug("internet process finished")
@@ -172,15 +165,13 @@ class InternetStorage:
 
         # return value is "ID,Time,Scans,Scantime,Tot.all,Tot.close,Inst.all,Inst.close,Stat.all,Stat.close,Avg RSSI,Std RSSI,Min RSSI,Max RSSI,Stat.ratio,Lat,Lon"
         summary = prepare_row_data_summary(id, time_format, scans, scantime, rssi_list, instantaneous_counts, static_list)
-        # {'device_id': '45', 'date': '20231020', 'time': '104000', 'scans': 8, 'scantime': '9.126',
+        # {'id': '45', 'date': '20231020', 'time': '104000', 'scans': 8, 'scantime': '9.126',
         #  'tot_all': '26', 'tot_close': '26', 'inst_all': '26', 'inst_close': '26', 'stat_all': '26', 'stat_close': '26',
         #  'rssi_avg': '-93.615', 'rssi_std': '3.329', 'rssi_min': '-99', 'rssi_max': '-85', 
         #  'rssi_thresh': -70, 'stat_ratio': '0.7', 'lat': '-3.52842', 'lon': '-15.52842'}
         
         # %Y%m%d,%H%M%S
         date = datetime.now().strftime("%Y%m%d")
-
-        print(summary)
 
         params = {'id':id,
                   'timestamp':time_format,
@@ -199,9 +190,9 @@ class InternetStorage:
                   'rssi_min':summary[12],
                   'rssi_max':summary[13],
                   'rssi_thresh':Config.Counting.rssi_close_threshold,
-                  'static_ratio': Config.Counting.static_ratio,
-                  'latitude': Config.latitude, 
-                  'longitude': Config.longitude  
+                  'static_ratio':Config.Counting.static_ratio,
+                  'latitude':Config.latitude, 
+                  'longitude':Config.longitude  
                   }
 
         self.com.enqueue_message(params)

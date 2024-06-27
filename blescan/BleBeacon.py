@@ -141,9 +141,9 @@ class BleBeacon:
             try:
                 storage.save_beacon_scan(id, timestr, beacons)
             except PermissionError as e:
-                logger.debug(f"No writing permission for {storage}")
+                logger.error(f"No writing permission for {storage}")
             except Exception as e:
-                logger.debug(f"Unkwnow writing error: {e}")
+                logger.error(f"Unkwnow writing error: {e}")
 
     def store_devices(self, macs):
         """store results into all given storage instances"""

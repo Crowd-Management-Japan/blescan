@@ -332,7 +332,6 @@ class XBeeStorage:
                   'longitude': Config.longitude
                   }
 
-        #self.com.encode_and_send(params)
         message = encode_data(params)
         self.com.enqueue_message(message)
 

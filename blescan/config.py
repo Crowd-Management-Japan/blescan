@@ -90,6 +90,7 @@ def _parse_counting_settings(inifile):
     Config.Counting.rssi_threshold = int(section.get('rssi_threshold', -100))
     Config.Counting.rssi_close_threshold = int(section.get('rssi_close_threshold', Config.Counting.rssi_threshold))
     Config.Counting.delta = int(section.get('delta', 10))
+    Config.Counting.static_ratio = float(section.get('static_ratio', 0.7))
     Config.Counting.storage += _get_storage_paths(inifile, section, 'storage')
     
     # return value is string. bool of non empty string ('0' aswell) results in True
