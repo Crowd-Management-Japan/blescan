@@ -164,7 +164,7 @@ class InternetStorage:
     def __init__(self, controller: InternetController):
         self.com = controller
 
-    def save_count(self, id: int, timestamp: datetime, scans: int, scantime: float, close_threshold: int, rssi_list: List, instantaneous_counts: List, static_list: List):
+    def save_count(self, id: int, timestamp: datetime, scans: int, scantime: float, rssi_list: List, instantaneous_counts: List, static_list: List):
 
 
         time_format = util.format_datetime_network(timestamp)

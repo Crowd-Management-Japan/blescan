@@ -100,7 +100,7 @@ class Storage:
     def _save_summary(self, row_data):
         self.save_file('summary', row_data)
 
-    def save_count(self, id: int, timestamp: datetime, scans: int, scantime: float, close_threshold: int, rssi_list: List, instantaneous_counts: List, static_list: List):
+    def save_count(self, id: int, timestamp: datetime, scans: int, scantime: float, rssi_list: List, instantaneous_counts: List, static_list: List):
         """
         Saves devices given by BleCount.
         This includes RSSI and summary
@@ -109,7 +109,7 @@ class Storage:
         time_format = util.format_datetime_old(timestamp)
 
         rssi_row = prepare_row_data_rssi(id, time_format, rssi_list)
-        summary_row = prepare_row_data_summary(id, time_format, scans, scantime, close_threshold, rssi_list, instantaneous_counts, static_list)
+        summary_row = prepare_row_data_summary(id, time_format, scans, scantime, rssi_list, instantaneous_counts, static_list)
 
         self._save_rssi(rssi_row)
         self._save_summary(summary_row)
