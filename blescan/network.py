@@ -171,10 +171,11 @@ class InternetStorage:
         old_format = util.format_datetime_old(timestamp)
 
         # return value is "ID,Time,Scans,Scantime,Tot.all,Tot.close,Inst.all,Inst.close,Stat.all,Stat.close,Avg RSSI,Std RSSI,Min RSSI,Max RSSI,Stat.ratio,Lat,Lon"
-        summary = prepare_row_data_summary(id, time_format, scans, scantime, close_threshold, rssi_list, instantaneous_counts, static_list)
+        summary = prepare_row_data_summary(id, time_format, scans, scantime, rssi_list, instantaneous_counts, static_list)
         # {'device_id': '45', 'date': '20231020', 'time': '104000', 'scans': 8, 'scantime': '9.126',
         #  'tot_all': '26', 'tot_close': '26', 'inst_all': '26', 'inst_close': '26', 'stat_all': '26', 'stat_close': '26',
-        #  'rssi_avg': '-93.615', 'rssi_std': '3.329', 'rssi_min': '-99', 'rssi_max': '-85', 'stat_ratio': '0.7', 'lat': '-3.52842', 'lon': '-15.52842'}
+        #  'rssi_avg': '-93.615', 'rssi_std': '3.329', 'rssi_min': '-99', 'rssi_max': '-85', 
+        #  'rssi_thresh': -70, 'stat_ratio': '0.7', 'lat': '-3.52842', 'lon': '-15.52842'}
         
         # %Y%m%d,%H%M%S
         date = datetime.now().strftime("%Y%m%d")
@@ -197,7 +198,7 @@ class InternetStorage:
                   'rssi_std':summary[11],
                   'rssi_min':summary[12],
                   'rssi_max':summary[13],
-                  'rssi_thresh':close_threshold,
+                  'rssi_thresh':Config.Counting.rssi_close_threshold,
                   'static_ratio': Config.Counting.static_ratio,
                   'latitude': Config.latitude, 
                   'longitude': Config.longitude  

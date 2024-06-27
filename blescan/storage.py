@@ -53,7 +53,8 @@ class Storage:
 
     def setup_summary(self):
         filename = f"{self.filename_base}_summary.csv"
-        self.setup_file(filename, "ID,Time,Scans,Scantime,Tot.all,Tot.close,Inst.all,Inst.close,Stat.all,Stat.close,Avg RSSI,Std RSSI,Min RSSI,Max RSSI,Stat.ratio,Lat,Lon")
+        self.setup_file(filename, "ID,Time,Scans,Scantime,Tot.all,Tot.close,Inst.all,Inst.close,Stat.all,Stat.close," \
+                        "Avg RSSI,Std RSSI,Min RSSI,Max RSSI,RSSI thresh,Stat.ratio,Lat,Lon")
         self.files['summary'] = filename
 
 
@@ -149,14 +150,14 @@ def prepare_row_data_rssi(id, time, rssi_list):
     # surround the list by ""
     return [id, time, f"\"{','.join([str(_) for _ in rssi_list])}\""]
 
-def prepare_row_data_summary(id: int, time: str, scans: int, scantime: float, close_threshold: int, rssi: List, instantaneous_counts: List, static_list: List):
+def prepare_row_data_summary(id: int, time: str, scans: int, scantime: float, rssi: List, instantaneous_counts: List, static_list: List):
 
     tot_all = len(rssi)
-    tot_close = len([_ for _ in rssi if _ > close_threshold])
+    tot_close = len([_ for _ in rssi if _ > Config.Counting.rssi_close_threshold])
     inst_all = round(mean(instantaneous_counts["all"]),3)
     inst_close = round(mean(instantaneous_counts["close"]),3)
     stat_all = len(static_list)
-    stat_close = len([dev for dev in static_list if dev.get_rssi() > close_threshold])
+    stat_close = len([dev for dev in static_list if dev.get_rssi() > Config.Counting.rssi_close_threshold])
 
     std = None
     avg = None
@@ -170,7 +171,7 @@ def prepare_row_data_summary(id: int, time: str, scans: int, scantime: float, cl
         maxi = max(rssi)
 
     return [id, time, scans, scantime, tot_all, tot_close, inst_all, inst_close, stat_all, stat_close, avg, std, mini, maxi,
-            Config.Counting.static_ratio, Config.latitude, Config.longitude]
+            Config.Counting.rssi_close_threshold, Config.Counting.static_ratio, Config.latitude, Config.longitude]
 
 def prepare_row_data_beacon(id, timestr, staying_time, rssi_list, manufacturer_data):
     average_rssi = mean(rssi_list)

@@ -301,9 +301,9 @@ class XBeeStorage:
         self.com = com
 
     
-    def save_count(self, id: int, timestamp: datetime, scans: int, scantime: float, close_threshold: int, rssi_list: List, instantaneous_counts: List, static_list: List):
+    def save_count(self, id: int, timestamp: datetime, scans: int, scantime: float, rssi_list: List, instantaneous_counts: List, static_list: List):
 
-        summary = prepare_row_data_summary(id, timestamp, scans, scantime, close_threshold, rssi_list, instantaneous_counts, static_list)
+        summary = prepare_row_data_summary(id, timestamp, scans, scantime, rssi_list, instantaneous_counts, static_list)
         # %Y%m%d,%H%M%S
         date = datetime.now().strftime("%Y%m%d")
 
@@ -326,7 +326,7 @@ class XBeeStorage:
                   'rssi_std':summary[11],
                   'rssi_min':summary[12],
                   'rssi_max':summary[13],
-                  'rssi_thresh':close_threshold,
+                  'rssi_thresh':Config.Counting.rssi_close_threshold,
                   'static_ratio': Config.Counting.static_ratio,
                   'latitude': Config.latitude, 
                   'longitude': Config.longitude

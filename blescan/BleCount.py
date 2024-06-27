@@ -132,7 +132,7 @@ class BleCount:
             try:
                 scans = self.scan_info["scans"]
                 scantime = round(self.scan_info["total_time"],3)
-                storage.save_count(id, time, scans, scantime, self.close_threshold, self.get_rssi_list(), self.instantaneous_counts, static_list)
+                storage.save_count(id, time, scans, scantime, self.get_rssi_list(), self.instantaneous_counts, static_list)
             except PermissionError as e:
                 logger.debug(f"No writing permission for {storage}")
             except Exception as e:
