@@ -1,11 +1,11 @@
-import datetime
+from datetime import datetime
 import os
 import csv
-import config
 from statistics import pstdev, mean
 import logging 
 from typing import List
 import util
+from config import Config
 
 logger = logging.getLogger('blescan.Storage')
 
@@ -29,8 +29,8 @@ class Storage:
         self.base_dir = base_dir
         if not os.path.exists(self.base_dir):
             os.makedirs(self.base_dir)
-        self.date = datetime.datetime.today()
-        self.filename_base = f"{self.base_dir}/ACC{str(config.Config.serial_number).zfill(2)}_{self.date.strftime('%Y%m%d')}"
+        self.date = datetime.today()
+        self.filename_base = f"{self.base_dir}/ACC{str(Config.serial_number).zfill(2)}_{self.date.strftime('%Y%m%d')}"
 
         # keep track of what files are already registered
         self.files = {}
@@ -53,7 +53,7 @@ class Storage:
 
     def setup_summary(self):
         filename = f"{self.filename_base}_summary.csv"
-        self.setup_file(filename, "ID,Time,Scantime,Tot.all,Tot.close,Inst.all,Inst.close,Stat.all,Stat.close,Avg RSSI,Std RSSI,Min RSSI,Max RSSI,Latitude,Longitude")
+        self.setup_file(filename, "ID,Time,Scans,Scantime,Tot.all,Tot.close,Inst.all,Inst.close,Stat.all,Stat.close,Avg RSSI,Std RSSI,Min RSSI,Max RSSI,Stat.ratio,Lat,Lon")
         self.files['summary'] = filename
 
 
@@ -68,7 +68,7 @@ class Storage:
                 f.write(f"{headers}\n")
 
     def check_date_update_files(self):
-        now = datetime.datetime.now()
+        now = datetime.now()
         if now != self.date:
             self.__init__(self.base_dir)
 
@@ -99,7 +99,7 @@ class Storage:
     def _save_summary(self, row_data):
         self.save_file('summary', row_data)
 
-    def save_count(self, id: int, timestamp: datetime.datetime, scantime: float, close_threshold: int, rssi_list: List, instantaneous_counts: List, static_list: List):
+    def save_count(self, id: int, timestamp: datetime, scans: int, scantime: float, close_threshold: int, rssi_list: List, instantaneous_counts: List, static_list: List):
         """
         Saves devices given by BleCount.
         This includes RSSI and summary
@@ -108,7 +108,7 @@ class Storage:
         time_format = util.format_datetime_old(timestamp)
 
         rssi_row = prepare_row_data_rssi(id, time_format, rssi_list)
-        summary_row = prepare_row_data_summary(id, time_format, scantime, close_threshold, rssi_list, instantaneous_counts, static_list)
+        summary_row = prepare_row_data_summary(id, time_format, scans, scantime, close_threshold, rssi_list, instantaneous_counts, static_list)
 
         self._save_rssi(rssi_row)
         self._save_summary(summary_row)
@@ -149,7 +149,7 @@ def prepare_row_data_rssi(id, time, rssi_list):
     # surround the list by ""
     return [id, time, f"\"{','.join([str(_) for _ in rssi_list])}\""]
 
-def prepare_row_data_summary(id: int, time: str, scantime: int, close_threshold: int, rssi: List, instantaneous_counts: List, static_list: List):
+def prepare_row_data_summary(id: int, time: str, scans: int, scantime: float, close_threshold: int, rssi: List, instantaneous_counts: List, static_list: List):
 
     tot_all = len(rssi)
     tot_close = len([_ for _ in rssi if _ > close_threshold])
@@ -169,7 +169,8 @@ def prepare_row_data_summary(id: int, time: str, scantime: int, close_threshold:
         mini = min(rssi)
         maxi = max(rssi)
 
-    return [id, time, scantime, tot_all, tot_close, inst_all, inst_close, stat_all, stat_close, avg, std, mini, maxi, config.Config.latitude, config.Config.longitude]
+    return [id, time, scans, scantime, tot_all, tot_close, inst_all, inst_close, stat_all, stat_close, avg, std, mini, maxi,
+            Config.Counting.static_ratio, Config.latitude, Config.longitude]
 
 def prepare_row_data_beacon(id, timestr, staying_time, rssi_list, manufacturer_data):
     average_rssi = mean(rssi_list)
@@ -177,4 +178,4 @@ def prepare_row_data_beacon(id, timestr, staying_time, rssi_list, manufacturer_d
 
     tagname = ''.join([manufacturer_data['major'], manufacturer_data['minor']])
 
-    return [id, timestr, tagname, staying_time, "{:.3f}".format(average_rssi), config.Config.latitude, config.Config.longitude]
+    return [id, timestr, tagname, staying_time, "{:.3f}".format(average_rssi), Config.latitude, Config.longitude]

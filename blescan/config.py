@@ -19,6 +19,7 @@ class Config:
         rssi_threshold: int = -100
         rssi_close_threshold: int = rssi_threshold
         delta: int = 10
+        static_ratio: float = 0.7
         storage: List = []
         use_internet: bool = False
         internet_url: str = None

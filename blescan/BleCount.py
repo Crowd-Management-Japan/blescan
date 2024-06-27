@@ -4,7 +4,7 @@ from datetime import datetime
 from collections import namedtuple, Counter
 from storage import Storage
 
-import config
+from config import Config
 import logging
 
 logger = logging.getLogger('blescan.Counting')
@@ -19,7 +19,7 @@ class BleCount:
     When saving, this accumulation is cleared to mimic the next longer scan.
     """
 
-    def __init__(self, rssi_threshold: int = -100, rssi_close_threshold = -75, delta:int=10, storage: Union[Storage,List[Storage]] = []):
+    def __init__(self, rssi_threshold: int = -100, rssi_close_threshold = -75, delta: int = 10, storage: Union[Storage,List[Storage]] = []):
         """
         Create an instance to keep track of the total amount of devices.
 
@@ -114,10 +114,10 @@ class BleCount:
         now = datetime.now()
         time = now.replace(second=(now.second // 10)*10)
         
-        id = config.Config.serial_number
+        id = Config.serial_number
 
         # Threshold of detections to label a MAC address as static
-        static_ratio  = 7
+        static_ratio  = Config.Counting.static_ratio
 
         # Count the number of occurrences of MAC addresses
         mac_counter = Counter(self.static_list)
@@ -130,8 +130,9 @@ class BleCount:
 
         for storage in self.storages:
             try:
-                scantime = scantime = round(self.scan_info["total_time"],3)
-                storage.save_count(id, time, scantime, self.close_threshold, self.get_rssi_list(), self.instantaneous_counts, static_list)
+                scans = self.scan_info["scans"]
+                scantime = round(self.scan_info["total_time"],3)
+                storage.save_count(id, time, scans, scantime, self.close_threshold, self.get_rssi_list(), self.instantaneous_counts, static_list)
             except PermissionError as e:
                 logger.debug(f"No writing permission for {storage}")
             except Exception as e:

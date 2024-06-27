@@ -32,7 +32,7 @@ def get_configuration(pan_id=1, is_coordinator=False, label=' ') -> Dict:
     
 def encode_data(data: Dict) -> str:
     """encode a dict for sending data to the homepage.
-    "DeviceID,Date,Time,Close count,Total count,Avg RSSI,Std RSSI,Min RSSI,Max RSSI"
+    ID,Time,Scans,Scantime,Tot.all,Tot.close,Inst.all,Inst.close,Stat.all,Stat.close,Avg RSSI,Std RSSI,Min RSSI,Max RSSI,Stat.ratio,Lat,Lon
     ignore keys, to reduce bytes that need to be transferred
     """
     return ",".join([str(v) for v in data.values()])
@@ -40,13 +40,12 @@ def encode_data(data: Dict) -> str:
 def decode_data(data: str) -> Dict[str, Any]:
     """decode data that was encoded with the function above
     """
-
     s = data.split(",")
 
-    return {'id': int(s[0]), 'timestamp': s[1], 'date': s[2], 'time': s[3], 'scantime': float(s[4]),
-            'count': int(s[5]), 'close': int(s[6]), 'inst_all': float(s[7]), 'inst_close': float(s[8]), 'static_total': int(s[9]), 'static_close': int(s[10]), 
-            'rssi_avg': float(s[11]), 'rssi_std': float(s[12]), 'rssi_min': int(s[13]), 'rssi_max': int(s[14]), 'rssi_thresh': int(s[15]),
-            'latitude': util.float_or_else(s[16], None), 'longitude': util.float_or_else(s[17], None)}
+    return {'id': int(s[0]), 'timestamp': s[1], 'date': s[2], 'time': s[3], 'scans': int(s[4]), 'scantime': float(s[5]),
+            'count': int(s[6]), 'close': int(s[7]), 'inst_all': float(s[8]), 'inst_close': float(s[9]), 'static_total': int(s[10]), 'static_close': int(s[11]), 
+            'rssi_avg': float(s[12]), 'rssi_std': float(s[13]), 'rssi_min': int(s[14]), 'rssi_max': int(s[15]), 
+            'rssi_thresh': int(s[16]), 'static_ratio': float(s[17]), 'latitude': util.float_or_else(s[18], None), 'longitude': util.float_or_else(s[19], None)}
 
 def auto_find_port():
     ports = serial.tools.list_ports.comports()
@@ -302,9 +301,9 @@ class XBeeStorage:
         self.com = com
 
     
-    def save_count(self, id: int, timestamp: datetime, scantime: float, close_threshold: int, rssi_list: List, instantaneous_counts: List, static_list: List):
+    def save_count(self, id: int, timestamp: datetime, scans: int, scantime: float, close_threshold: int, rssi_list: List, instantaneous_counts: List, static_list: List):
 
-        summary = prepare_row_data_summary(id, time_format, scantime, close_threshold, rssi_list, instantaneous_counts, static_list)
+        summary = prepare_row_data_summary(id, timestamp, scans, scantime, close_threshold, rssi_list, instantaneous_counts, static_list)
         # %Y%m%d,%H%M%S
         date = datetime.now().strftime("%Y%m%d")
 
@@ -315,20 +314,22 @@ class XBeeStorage:
                   'timestamp':time_format,
                   'date':date,
                   'time':old_format.replace(':', ''),
+                  'scans':scans,
                   'scantime':scantime,
-                  'count':summary[3],
-                  'close':summary[4],
-                  'inst_all':summary[5],
-                  'inst_close':summary[6],
-                  'static_total':summary[7],
-                  'static_close':summary[8],
-                  'rssi_avg':summary[9],
-                  'rssi_std':summary[10],
-                  'rssi_min':summary[11],
-                  'rssi_max':summary[12],
+                  'tot_all':summary[4],
+                  'tot_close':summary[5],
+                  'inst_all':summary[6],
+                  'inst_close':summary[7],
+                  'stat_all':summary[8],
+                  'stat_close':summary[9],
+                  'rssi_avg':summary[10],
+                  'rssi_std':summary[11],
+                  'rssi_min':summary[12],
+                  'rssi_max':summary[13],
+                  'rssi_thresh':close_threshold,
+                  'static_ratio': Config.Counting.static_ratio,
                   'latitude': Config.latitude, 
-                  'longitude': Config.longitude,
-                  'rssi_thresh':close_threshold
+                  'longitude': Config.longitude
                   }
 
         #self.com.encode_and_send(params)

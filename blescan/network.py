@@ -6,7 +6,7 @@ import requests
 from time import sleep
 import logging
 import util
-import config
+from config import Config
 from led import LEDState, LEDCommunicator
 #import multiprocessing as mp
 import threading
@@ -164,39 +164,43 @@ class InternetStorage:
     def __init__(self, controller: InternetController):
         self.com = controller
 
-    def save_count(self, id: int, timestamp: datetime, scantime: float, close_threshold: int, rssi_list: List, instantaneous_counts: List, static_list: List):
+    def save_count(self, id: int, timestamp: datetime, scans: int, scantime: float, close_threshold: int, rssi_list: List, instantaneous_counts: List, static_list: List):
 
 
         time_format = util.format_datetime_network(timestamp)
         old_format = util.format_datetime_old(timestamp)
 
-        # return value is "ID,Time,Scantime,Tot.all,Tot.close,Inst.all,Inst.close,Stat.all,Stat.close,Avg RSSI,Std RSSI,Min RSSI,Max RSSI,Latitude,Longitude"
-        summary = prepare_row_data_summary(id, time_format, scantime, close_threshold, rssi_list, instantaneous_counts, static_list)
-        # {'device_id': '45', 'date': '20231020', 'time': '104000', 'scantime': '9.126',
+        # return value is "ID,Time,Scans,Scantime,Tot.all,Tot.close,Inst.all,Inst.close,Stat.all,Stat.close,Avg RSSI,Std RSSI,Min RSSI,Max RSSI,Stat.ratio,Lat,Lon"
+        summary = prepare_row_data_summary(id, time_format, scans, scantime, close_threshold, rssi_list, instantaneous_counts, static_list)
+        # {'device_id': '45', 'date': '20231020', 'time': '104000', 'scans': 8, 'scantime': '9.126',
         #  'tot_all': '26', 'tot_close': '26', 'inst_all': '26', 'inst_close': '26', 'stat_all': '26', 'stat_close': '26',
-        #  'rssi_avg': '-93.615', 'rssi_std': '3.329', 'rssi_min': '-99', 'rssi_max': '-85', 'lat': '-3.52842', 'lon': '-15.52842'}
+        #  'rssi_avg': '-93.615', 'rssi_std': '3.329', 'rssi_min': '-99', 'rssi_max': '-85', 'stat_ratio': '0.7', 'lat': '-3.52842', 'lon': '-15.52842'}
         
         # %Y%m%d,%H%M%S
         date = datetime.now().strftime("%Y%m%d")
+
+        print(summary)
 
         params = {'id':id,
                   'timestamp':time_format,
                   'date':date,
                   'time':old_format.replace(':', ''),
+                  'scans': scans,
                   'scantime':scantime,
-                  'count':summary[3],
-                  'close':summary[4],
-                  'inst_all':summary[5],
-                  'inst_close':summary[6],
-                  'static_total':summary[7],
-                  'static_close':summary[8],
-                  'rssi_avg':summary[9],
-                  'rssi_std':summary[10],
-                  'rssi_min':summary[11],
-                  'rssi_max':summary[12],
-                  'latitude': config.Config.latitude, 
-                  'longitude': config.Config.longitude,
-                  'rssi_thresh':close_threshold
+                  'count':summary[4],
+                  'close':summary[5],
+                  'inst_all':summary[6],
+                  'inst_close':summary[7],
+                  'static_total':summary[8],
+                  'static_close':summary[9],
+                  'rssi_avg':summary[10],
+                  'rssi_std':summary[11],
+                  'rssi_min':summary[12],
+                  'rssi_max':summary[13],
+                  'rssi_thresh':close_threshold,
+                  'static_ratio': Config.Counting.static_ratio,
+                  'latitude': Config.latitude, 
+                  'longitude': Config.longitude  
                   }
 
         self.com.enqueue_message(params)
