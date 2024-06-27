@@ -43,7 +43,7 @@ def decode_data(data: str) -> Dict[str, Any]:
     s = data.split(",")
 
     return {'id': int(s[0]), 'timestamp': s[1], 'date': s[2], 'time': s[3], 'scans': int(s[4]), 'scantime': float(s[5]),
-            'count': int(s[6]), 'close': int(s[7]), 'inst_all': float(s[8]), 'inst_close': float(s[9]), 'static_total': int(s[10]), 'static_close': int(s[11]), 
+            'tot_all': int(s[6]), 'tot_close': int(s[7]), 'inst_all': float(s[8]), 'inst_close': float(s[9]), 'stat_all': int(s[10]), 'stat_close': int(s[11]), 
             'rssi_avg': float(s[12]), 'rssi_std': float(s[13]), 'rssi_min': int(s[14]), 'rssi_max': int(s[15]), 
             'rssi_thresh': int(s[16]), 'static_ratio': float(s[17]), 'latitude': util.float_or_else(s[18], None), 'longitude': util.float_or_else(s[19], None)}
 
