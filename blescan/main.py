@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 import os
+from statistics import mean
 
 # setup logging (before any imports use it)
 
@@ -72,6 +73,7 @@ def main(config_path: str='./config.ini'):
     counter = BleCount(threshold, close_threshold, delta, static_ratio, counting_storage)
 
     scantime = adjust_scantime()
+    scantime_list = []
     scanner = Scanner()
 
     exit_code = 0
@@ -94,6 +96,13 @@ def main(config_path: str='./config.ini'):
         elif totaltime<1:
             scantime += 0.001
         logger.debug(f"scantime: {totaltime}")
+
+        # eventually store scantime to have better setting at startup
+        scantime_list.append(scantime)
+        if len(scantime_list)>100:
+            with open(SCANTIME_VALUE, 'w') as file:
+                file.write(str(mean(scantime_list)))
+            scantime_list.clear()
 
         # process scan
         counter.process_scan(devices, totaltime)
