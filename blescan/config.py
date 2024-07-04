@@ -12,7 +12,7 @@ class Config:
     serial_number: int = None
 
     led: bool = True
-    scantime: int = 1.0
+    scantime: int = 1
 
     use_location: bool = False
     longitude: float = None
