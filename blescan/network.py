@@ -9,8 +9,8 @@ import datetime
 import util
 import config
 from led import LEDState, LEDCommunicator
-# import multiprocessing as mp
-import threading
+import multiprocessing as mp
+#import threading
 import queue
 
 import json
@@ -38,8 +38,8 @@ class InternetController:
         self.url:str = url
         self.led_communicator: LEDCommunicator = led_communicator
         self.message_queue = queue.Queue(30)
-        # self.process: mp.Process
-        self.process: threading.Thread
+        self.process: mp.Process
+        # self.process: threading.Thread
         self.ready: bool = False
         self.running: bool = False
 
@@ -58,8 +58,8 @@ class InternetController:
         self.running = True
         logger.info("--- starting Internet process ---")
 
-        # self.process = mp.Process(target=self._run, daemon=True)
-        self.process = threading.Thread(name='send_cloud_thd', target=self._run,daemon=True)
+        self.process = mp.Process(target=self._run, daemon=True)
+        # self.process = threading.Thread(name='send_cloud_thd', target=self._run,daemon=True)
         self.process.start()
         logger.debug("internet process started")
 
