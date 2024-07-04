@@ -87,7 +87,8 @@ class XBeeController:
             self.device.close()
 
     def _setup(self):
-        self._set_state(LEDState.XBEE_SETUP, True)
+        if Config.led:
+            self._set_state(LEDState.XBEE_SETUP, True)
         port = self.port
         logger.debug(f"port: {port}")
         if port == 'auto': port = auto_find_port()
@@ -114,7 +115,8 @@ class XBeeController:
 
         logger.debug(f"device using protocol {self.device.get_protocol()}")
         logger.debug(f"device setup completed")
-        self._set_state(LEDState.XBEE_SETUP, False)
+        if Config.led:
+            self._set_state(LEDState.XBEE_SETUP, False)
 
     def _teardown(self):
         if self.device is not None and self.device.is_open():
@@ -157,14 +159,16 @@ class XBeeController:
 
                 logger.debug("tearing down xbee")
             except Exception as e:
-                self._set_state(LEDState.XBEE_CRASH, True)
+                if Config.led:
+                    self._set_state(LEDState.XBEE_CRASH, True)
                 logger.error("XBee process crashed with exception - trying to restart in 5s")
                 
                 logger.error(e)
                 logger.debug("end of error message")
                 time.sleep(10)
                 logger.debug("restarting xbee process")
-                self._set_state(LEDState.XBEE_CRASH, False)
+                if Config.led:
+                    self._set_state(LEDState.XBEE_CRASH, False)
             finally:
                 self._teardown()
         logger.info("--- xbee process finished ---")
@@ -185,15 +189,18 @@ class XBeeController:
 
         while self.running:
             if len(available_targets) == 0:
-                self._set_state(LEDState.NO_XBEE_CONNECTION, True)
+                if Config.led:
+                    self._set_state(LEDState.NO_XBEE_CONNECTION, True)
                 logger.debug("No reachable targets. Rescanning")
                 available_targets = self._discover_network()
                 logger.debug(f"available internet nodes: {available_targets}")
                 continue
             else:
-                self._set_state(LEDState.NO_XBEE_CONNECTION, False)
+                if Config.led:
+                    self._set_state(LEDState.NO_XBEE_CONNECTION, False)
 
-            self._set_state(LEDState.XBEE_STACKING, self.message_queue.qsize() > XBEE_STACKING_THRESHOLD)
+            if Config.led:
+                self._set_state(LEDState.XBEE_STACKING, self.message_queue.qsize() > XBEE_STACKING_THRESHOLD)
 
             # if there is a message, send it to an available target.
             # if the target happens to not be available (_send_message return false),

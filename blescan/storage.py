@@ -6,14 +6,23 @@ import logging
 from typing import List
 import util
 from config import Config
+import shutil
 
 logger = logging.getLogger('blescan.Storage')
+
+FILE_TYPE = ['beacon', 'rssi', 'stay_time', 'summary']
+FILE_HEADER = {'rssi': 'ID,Time,RSSI list',
+                'stay_time': 'ID,Time,Tag Name,Staying time,Average RSSI,Latitude,Longitude',
+                'beacon': 'ID,Time,Beacon list,RSSI list',
+                'summary': 'ID,Time,Scans,Scantime,Tot.all,Tot.close,Inst.all,Inst.close,Stat.all,Stat.close,'
+                            'Avg RSSI,Std RSSI,Min RSSI,Max RSSI,RSSI thresh,Stat.ratio,Lat,Lon'}
 
 class Storage:
     """
     This class encapsulates the storage interface to make it easily reusable for different locations
 
-    The files are stored in BASE_DIR/ACC{SERIAL_NUMBER}_{CURRENT_DATE(YYMMDD)}_{rssi/summary/beacon}.csv
+    The files are temporarily stored in BASE_DIR/ACC{SERIAL_NUMBER}_{CURRENT_DATE(YYMMDD)}/{CURRENT_TIME(HHMM)}_{rssi/summary/beacon/stay_time}.csv
+    Files are later combined and finally saved into this format BASE_DIR/ACC{SERIAL_NUMBER}_{CURRENT_DATE(YYMMDD)}_{rssi/summary/beacon/stay_time}.csv
     Where base_dir can be given in the constructor to choose between e.g. usb or sdcard.
 
     This class does not check if the data is formatted correctly to the corresponding headers.
@@ -25,65 +34,66 @@ class Storage:
 
         Keyword arguments:
         base_dir -- the base folder to store the files
+        today_dir -- the folder to store todays files
         """
         self.base_dir = base_dir
-        if not os.path.exists(self.base_dir):
-            os.makedirs(self.base_dir)
-        self.date = datetime.today()
-        self.filename_base = f"{self.base_dir}/ACC{str(Config.serial_number).zfill(2)}_{self.date.strftime('%Y%m%d')}"
+        self.date = datetime.today().date()
+        self.today_dir = f"{base_dir}/ACC{str(Config.serial_number).zfill(2)}_{self.date.strftime('%Y%m%d')}"
+        if not os.path.exists(self.today_dir):
+            os.makedirs(self.today_dir)
 
-        # keep track of what files are already registered
-        self.files = {}
-        
+    @staticmethod
+    def reconstruct_files(base_dir: str):
+        today = datetime.today().strftime('%Y%m%d')
 
-    def setup_rssi(self):
-        filename_rssi = f"{self.filename_base}_rssi.csv"
-        self.setup_file(filename_rssi, "ID,Time,RSSI list")
-        self.files['rssi'] = filename_rssi
+        # look for all subfolders and list them
+        all_subfolders = []
+        for item in os.listdir(base_dir):
+            item_path = os.path.join(base_dir, item)
+            if os.path.isdir(item_path):
+                all_subfolders.append(item)
 
-    def setup_beacon_stay(self):
-        filename = f"{self.filename_base}_stay_time.csv"
-        self.setup_file(filename, "ID,Time,Tag Name,Staying time,Average RSSI,Latitude,Longitude")
-        self.files['beacon_stay'] = filename
+        # loop all subfolder and filetypes and reconstruct them
+        for current_dir in all_subfolders:
+            if today not in current_dir:
+                for type in FILE_TYPE:
+                    all_lines = [FILE_HEADER[type], "\n"]
+                    complete_file = f"{base_dir}/{current_dir}_{type}.csv"
+                    for hour in range(24):
+                        for minute in range(0, 60, 10):
+                            piece_file = f"{base_dir}/{current_dir}/{hour:02d}{minute:02d}_{type}.csv"
+                            if os.path.exists(piece_file):
+                                with open(piece_file, "r") as f:
+                                    lines = f.readlines()
+                                    all_lines.extend(lines)
 
-    def setup_beacon_scan(self):
-        filename = f"{self.filename_base}_beacon.csv"
-        self.setup_file(filename, "ID,Time,Beacon list,RSSI list")
-        self.files['beacon_scan'] = filename
+                    with open(complete_file, "w") as f:
+                        f.writelines(all_lines)
 
-    def setup_summary(self):
-        filename = f"{self.filename_base}_summary.csv"
-        self.setup_file(filename, "ID,Time,Scans,Scantime,Tot.all,Tot.close,Inst.all,Inst.close,Stat.all,Stat.close," \
-                        "Avg RSSI,Std RSSI,Min RSSI,Max RSSI,RSSI thresh,Stat.ratio,Lat,Lon")
-        self.files['summary'] = filename
-
-
-    def setup_file(self, filename, headers):
-        """ reusable function. Will check and create file with headers if not already present"""
-
-        # append will create if the file does not exist, but set the courser to the end, so seek(0) to get to the start of the file
-        with open(filename, "a+") as f:
-            f.seek(0)
-            if len(f.readlines()) < 1:
-                logger.info(f"{filename} not existing... creating file with headers")
-                f.write(f"{headers}\n")
+                # delete the subfolder only when
+                shutil.rmtree(f"{base_dir}/{current_dir}")
 
     def check_date_update_files(self):
-        now = datetime.now()
-        if now != self.date:
+        today = datetime.today().date()
+        if today != self.date:
             self.__init__(self.base_dir)
+
+    def get_rounded_time(self):
+        # round down to the nearest 10 minutes
+        now = datetime.now()
+        rounded_minute = (now.minute // 10) * 10
+        rounded_time = now.replace(minute=rounded_minute, second=0, microsecond=0)
+        return rounded_time.strftime('%H%M')
 
 
     def save_file(self, name, row_data):
         """
-        Save data to a file. The name is used to get the file from the files attribute.
-        If it is not present there, it will try to call the similarly named setup function, which should create and register this file.
+        Save data to a file. New files are created every 10 minutes to avoid a slow down for large files.
+        Single files are combined on startup by looking for folders of the previous days.
         """
         self.check_date_update_files()
-        if name not in self.files.keys():
-            setup_name = getattr(self, f"setup_{name}")
-            setup_name()
-        filename = self.files[name]
+        rounded_time = self.get_rounded_time()
+        filename = f"{self.today_dir}/{rounded_time}_{name}.csv"
         with open(filename, "a") as f:
             csvwriter = csv.writer(f)
             csvwriter.writerow(row_data)
@@ -92,10 +102,10 @@ class Storage:
         self.save_file('rssi', row_data)
 
     def _save_beacon_stay(self, row_data):
-        self.save_file('beacon_stay', row_data)
+        self.save_file('stay_time', row_data)
 
     def _save_beacon_scan(self, row_data):
-        self.save_file('beacon_scan', row_data)
+        self.save_file('beacon', row_data)
 
     def _save_summary(self, row_data):
         self.save_file('summary', row_data)
@@ -133,12 +143,10 @@ class Storage:
         self._save_beacon_stay(beacon_row)
 
     def __str__(self):
-        return f"Storage({self.base_dir})"
+        return f"Storage: {self.base_dir}"
     
     def __repr__(self):
         return self.__str__()
-
-    
 
 def prepare_row_data_beacon_scan(id, time, tag_rssi_list: List[tuple]):
     # surround the list by ""

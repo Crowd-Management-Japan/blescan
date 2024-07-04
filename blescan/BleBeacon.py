@@ -113,7 +113,7 @@ class BleBeacon:
         if len(exited) > 0:
             self.store_devices(exited)
 
-        if datetime.now() - self.last_scan_save >= timedelta(seconds=1):
+        if datetime.now() - self.last_scan_save >= timedelta(seconds=config.Config.scantime):
             self.store_scan(filtered)
 
     def __str__(self) -> str:

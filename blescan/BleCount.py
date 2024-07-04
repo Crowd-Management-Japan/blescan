@@ -19,7 +19,7 @@ class BleCount:
     When saving, this accumulation is cleared to mimic the next longer scan.
     """
 
-    def __init__(self, rssi_threshold: int = -100, rssi_close_threshold = -75, delta: int = 10, static_ratio: float = 0.7, storage: Union[Storage,List[Storage]] = []):
+    def __init__(self, rssi_threshold: int = -100, rssi_close_threshold = -75, static_ratio: float = 0.7, storage: Union[Storage,List[Storage]] = []):
         """
         Create an instance to keep track of the total amount of devices.
 
@@ -29,40 +29,38 @@ class BleCount:
         rssi_close_threshold -- devices with a greater rssi_value are considered close. 
                     Used for the summary statistic
 
-        delta -- time interval (in seconds) to analyse and save data 
-                    (currently only 10s make sense, because when storing the time is trimmed to full 10 seconds (00:00, 00:10, 00:20,..))
-                    using a value below 10s would lead to writing multiple lines for the same timestamp (00:00, 00:10, 00:10, 00:20,...)
-
         storage -- a single or a list of storage instances to save the data to. 
                     Multiple storage instances could be used for saving to USB and to SDcard as backup.
                     This class uses the save_rssi and save_summary functions to save data.
         """
         if type(storage) is not list: storage = [storage]
         self.storages = storage
-        self.old_time_remainder = 0
+        self.prev_remainder = {
+            "count": 0,
+            "transit": 0
+        }
         self.last_update = datetime.now()
         self.scanned_devices = {}
         self.rssi_threshold = rssi_threshold
         self.rssi_close_threshold = rssi_close_threshold
-        self.delta = delta
         self.static_ratio = static_ratio
         self.scan_info = {
             "scans": 0,
             "total_time": 0
         }
         self.static_list = []
+        self.transit_list = []
         self.instantaneous_counts = {
             "all": [],
             "close": []
         }
 
-
-    # Filter devices that are below the mininium RSSI defined for detection threshold
+    # filter devices that are below the mininium RSSI defined for detection threshold
     def filter_devices(self, devices: List[Device]) -> List[Device]:
         """filter out devices below the minimum rssi threshold"""
         return [dev for dev in devices if dev.get_rssi() > self.rssi_threshold]
 
-    # Filter devices above the specified RSSI threshold for "close"
+    # filter devices above the specified RSSI threshold for "close"
     def filter_close(self, devices: List[Device]) -> List[Device]:
         """filter out devices below the close rssi threshold"""
         return [dev for dev in devices if dev.get_rssi() > self.rssi_close_threshold]
@@ -77,10 +75,10 @@ class BleCount:
         self.instantaneous_counts["all"].append(len(filtered))
         self.instantaneous_counts["close"].append(len(close))
         
-        # Assumes multiple detections in a single scan
+        # assumes multiple detections in a single scan
         for device in filtered:
             mac = device.get_mac()
-            self.static_list.append(device.get_mac())
+            self.static_list.append(mac)
 
             if mac not in self.scanned_devices.keys():
                 self.scanned_devices[mac] = device
@@ -89,20 +87,48 @@ class BleCount:
                 if old.get_rssi() < device.get_rssi():
                     self.scanned_devices[mac] = device
 
-        # check if storage should happen
+        # check if storage or should happen
         now = datetime.now()
         midnight = datetime.combine(now.date(), datetime.min.time())
         seconds = (now - midnight).seconds
-        time_remainder = seconds - math.floor(seconds / self.delta) * self.delta
 
-        if time_remainder<self.old_time_remainder:
-            reference_time = midnight + timedelta(seconds=math.floor(seconds / self.delta) * self.delta)
+        if seconds % Config.Counting.delta < self.prev_remainder['count']:
+            reference_time = midnight + timedelta(seconds=(seconds // Config.Counting.delta) * Config.Counting.delta)
             self.store_devices(reference_time)
+        self.prev_remainder['count'] = seconds % Config.Counting.delta
 
-        self.old_time_remainder = time_remainder
+        # prepare list for transit time detection
+        if Config.Transit.enabled:
+            for device in close:
+                code = self.encript_mac_to_code(device.get_mac())
+                self.transit_list.append(code)
+
+            if seconds % Config.Transit.delta < self.prev_remainder['transit']:
+                reference_time = midnight + timedelta(seconds=(seconds // Config.Transit.delta) * Config.Transit.delta)
+                self.transit_list = list(set(self.transit_list))
+                logger.debug(f"transit data for {reference_time} ready to be sent to the backend")
+                ##ESPARK: include here the function sending the data for the transit time to the backend
+                #         information to be sent are: device id (Config.serial_number), time (reference_time), and id list (self.transit_list)
+                #print(Config.serial_number)
+                #print(reference_time)
+                #print(self.transit_list)
+                self.transit_list.clear()
+        self.prev_remainder['transit'] = seconds % Config.Transit.delta
 
     def __str__(self) -> str:
         return self.name
+
+    def encript_mac_to_code(self, mac_address: str) -> int:
+        string, mac_address = '', mac_address.replace(":", "")
+        for i in range(len(mac_address)):
+            num = ord(mac_address[i])
+            code = num
+            if 48 <= num <= 57:
+                code = num - 48
+            elif 97 <= num <= 109:
+                code = num - 87
+            string = string + str(code)
+        return int(string)
 
     def get_rssi_list(self) -> List[int]:
         return [dev.get_rssi() for dev in self.scanned_devices.values()]

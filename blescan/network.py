@@ -89,16 +89,19 @@ class InternetController:
         message = None
         while self.running:
 
-            self._set_state(LEDState.INTERNET_STACKING, self.message_queue.qsize() > INTERNET_STACKING_THRESHOLD)
+            if Config.led:
+                self._set_state(LEDState.INTERNET_STACKING, self.message_queue.qsize() > INTERNET_STACKING_THRESHOLD)
 
             if message is not None:
                 success = self._send_message(message)
                 logger.debug(f"internet sending success: {success} ")
                 if success:
-                    self._set_state(LEDState.NO_INTERNET_CONNECTION, False)
+                    if Config.led:
+                        self._set_state(LEDState.NO_INTERNET_CONNECTION, False)
                     message = None
                 else:
-                    self._set_state(LEDState.NO_INTERNET_CONNECTION, True)
+                    if Config.led:
+                        self._set_state(LEDState.NO_INTERNET_CONNECTION, True)
                     sleep(2)
 
             elif self.message_queue.qsize() > 0:

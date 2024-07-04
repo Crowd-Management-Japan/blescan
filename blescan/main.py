@@ -4,7 +4,6 @@ import os
 from statistics import mean
 
 # setup logging (before any imports use it)
-
 if not os.path.exists("logs"):
     os.mkdir("logs")
     
@@ -42,11 +41,12 @@ xbee = XBeeController(led_communicator=led_communicator)
 
 CODE_SHUTDOWN_DEVICE = 100
 SCANTIME_VALUE = "./etc/scantime.txt"
-SCANTIME_PARAMETERS = [15,0.6,0.2,2]
+SCANTIME_PARAMETERS = [15,2]
 
 def main(config_path: str='./config.ini'):
     parse_ini(config_path)
-    led_communicator.start()
+    if Config.led:
+        led_communicator.start()
 
     if Config.Counting.use_internet:
         setup_internet()
@@ -70,7 +70,19 @@ def main(config_path: str='./config.ini'):
     close_threshold = Config.Counting.rssi_close_threshold
     delta = Config.Counting.delta
     static_ratio = Config.Counting.static_ratio
-    counter = BleCount(threshold, close_threshold, delta, static_ratio, counting_storage)
+    counter = BleCount(threshold, close_threshold, static_ratio, counting_storage)
+
+    logger.debug("reconstructing old files (if any)")
+    # stitch files from previous days
+    storage_key = 'Storage: '
+    for storage in beacon_storage:
+        if storage_key in str(storage):
+            storage_path = str(storage)
+            Storage.reconstruct_files(storage_path.replace(storage_key,''))
+    for storage in counting_storage:
+        if storage_key in str(storage):
+            storage_path = str(storage)
+            Storage.reconstruct_files(storage_path.replace(storage_key,''))
 
     scantime = adjust_scantime()
     scantime_list = []
@@ -81,7 +93,8 @@ def main(config_path: str='./config.ini'):
 
     logger.info("--- Startup complete. Begin scanning ---")
 
-    led_communicator.disable_state(LEDState.SETUP)
+    if Config.led:
+        led_communicator.disable_state(LEDState.SETUP)
 
     while running:
         # scan for BLE devices 
@@ -91,10 +104,10 @@ def main(config_path: str='./config.ini'):
         totaltime = (scanend - scanstart).total_seconds()
 
         # adjust scanning time with minimal steps
-        if totaltime>1:
-            scantime -= 0.001
-        elif totaltime<1:
-            scantime += 0.001
+        if totaltime > Config.scantime:
+            scantime -= 0.001 * Config.scantime
+        elif totaltime < Config.scantime:
+            scantime += 0.001 * Config.scantime
         logger.debug(f"scantime: {totaltime}")
 
         # eventually store scantime to have better setting at startup
@@ -104,7 +117,7 @@ def main(config_path: str='./config.ini'):
                 file.write(str(mean(scantime_list)))
             scantime_list.clear()
 
-        # process scan
+        # process scan  
         counter.process_scan(devices, totaltime)
         beacon.process_scan(devices)
 
@@ -116,16 +129,19 @@ def main(config_path: str='./config.ini'):
     return exit_code
 
 def adjust_scantime():
+    """search for a scan time configuration which is valid for any hardware"""
     if file_exists(SCANTIME_VALUE):
         # scanning time was already determined for this device
         with open(SCANTIME_VALUE, 'r') as file:
-            content = file.read().strip()
-            return float(content)
+            scantime = float(file.read().strip())
     else:
+        scantime = Config.scantime
+
+    if abs(1 - (scantime / Config.scantime)) > 0.05:
         # need to determine scanning time to ensure real time is as close as possible to 1 s
         logger.info("--- Determining optimal scanning time configuration ---")
-        scantime = SCANTIME_PARAMETERS[1]
-        step = SCANTIME_PARAMETERS[2]
+        scantime = Config.scantime / 2   
+        step = scantime / 5
         for i in range(SCANTIME_PARAMETERS[0]):
             # peform a scan and check how long it takes
             scanstart = datetime.now()
@@ -134,19 +150,19 @@ def adjust_scantime():
             totaltime = (scanend - scanstart).total_seconds()
 
             # if larger than 1.0 s reduce step and retry
-            if totaltime==1:
+            if totaltime==Config.scantime:
                 break
-            elif totaltime<1:
+            elif totaltime < Config.scantime:
                 scantime += step
             else:
                 scantime -= step
-                step = step/SCANTIME_PARAMETERS[3]
+                step /= SCANTIME_PARAMETERS[1]
 
             # save settings to ensure faster startup the next time
             with open(SCANTIME_VALUE, 'w') as file:
                 file.write(str(scantime))
 
-        return scantime
+    return scantime
 
 def file_exists(file_path):
     return os.path.exists(file_path)
@@ -156,7 +172,8 @@ def shutdown_blescan():
     internet.stop()
     xbee.stop()
     
-    led_communicator.stop()
+    if Config.led:
+        led_communicator.stop()
 
 def setup_internet():
     logger.debug("Setting up internet")

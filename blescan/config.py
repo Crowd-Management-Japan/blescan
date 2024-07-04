@@ -11,6 +11,9 @@ class Config:
     inifile: configparser.ConfigParser = None
     serial_number: int = None
 
+    led: bool = True
+    scantime: int = 1.0
+
     use_location: bool = False
     longitude: float = None
     latitude: float = None
@@ -37,11 +40,16 @@ class Config:
 
     class Beacon:
         target_id: str = ''
-        scans: int = 8
+        scans: int = 10
         threshold: int = 3
         storage: List = []
         shutdown_on_scan: bool = False
         shutdown_id: str = None
+
+    class Transit:
+        delta: int = 5
+        enabled: bool = False
+        internet_url: str = None
 
     @staticmethod
     def check_integrity():
@@ -52,13 +60,16 @@ class Config:
             raise ValueError("Serial number is not set (required value)!")
 
         if Config.Counting.use_internet and Config.Counting.internet_url == None:
-            raise ValueError(f"Using internet without defining url!")
+            raise ValueError(f"Using internet for counting without defining url!")
+        
+        if Config.Transit.enabled and Config.Transit.internet_url == None:
+            raise ValueError(f"Using internet for transit without defining url!")
         
         if Config.XBee.use_xbee and not Config.XBee.internet_ids:
             raise ValueError("Using XBee, but no internet nodes set")
         
-        if not Config.Counting.storage and not Config.Beacon.storage and not Config.Counting.use_internet:
-            raise ValueError("Not storing any counting or beacon data!")
+        if not Config.Counting.storage and not Config.Beacon.storage and not Config.Counting.use_internet and not Config.Transit.enabled:
+            raise ValueError("Not storing any counting, beacon or transit data!")
 
 def _get_storage_paths(inifile, section, key):
     """retrieve a list of defined storage places"""
@@ -83,6 +94,13 @@ def _get_storage_paths(inifile, section, key):
             logger.error("No permissions for storage %s. Ignoring", path)
 
     return stors
+
+def _parse_transit_settings(inifile):
+    logger.debug("parsing transit time config")
+    section = inifile['TRANSIT']
+    Config.Transit.delta = int(section.get('delta', 5))
+    Config.Transit.enabled = bool(int(section.get('transit_enabled', '0')))
+    Config.Transit.internet_url = section.get('url', None)
 
 def _parse_counting_settings(inifile):
     logger.debug("parsing counting config")
@@ -133,6 +151,8 @@ def _parse_user_settings(inifile):
     section = inifile['USER']
 
     Config.serial_number = int(section.get('devID', 0))
+    Config.led = bool(int(section.get('led', '1')))
+    Config.scantime = int(section.get('scantime', 1))
 
     location = section.get('location', '0').split(",")
     Config.use_location = len(location) == 2
@@ -156,6 +176,7 @@ def parse_ini(path='config.ini'):
     _parse_counting_settings(inifile)
     _parse_xbee_settings(inifile)
     _parse_beacon_settings(inifile)
+    _parse_transit_settings(inifile)
 
     Config.check_integrity()
 

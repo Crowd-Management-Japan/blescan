@@ -42,7 +42,7 @@ def read_last_updated(path='../bleak/config.ini'):
 
         return int(section.get('last_updated', 0))
     except FileNotFoundError:
-        logging.error("Configfile not found")
+        logging.error("Config file not found")
         return -1
     except KeyError:
         logging.error("Config file in wrong format.")
