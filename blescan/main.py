@@ -8,7 +8,7 @@ if not os.path.exists("logs"):
     os.mkdir("logs")
     
 filename = f"logs/log_{datetime.now().strftime('%m%d')}.txt"
-logging.getLogger('blescan').setLevel(logging.ERROR)
+logging.getLogger('blescan').setLevel(logging.DEBUG)
 logging.basicConfig(level=logging.ERROR, 
                     format=('%(name)s %(levelname)s %(filename)s: %(lineno)d:\t%(message)s'))
 file_formatter = logging.Formatter("%(levelname)s:%(name)s:%(message)s")
