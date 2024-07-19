@@ -11,8 +11,8 @@ git pull origin master
 source .venv/bin/activate
 
 # led0 = green, led1 = red
-ledGreen='/sys/class/leds/led0'
-ledRed='/sys/class/leds/led1'
+ledGreen='/sys/class/leds/mmc0'
+ledRed='/sys/class/leds/mmc0'
 leds=($ledGreen $ledRed)
 
 for led in ${leds[@]}

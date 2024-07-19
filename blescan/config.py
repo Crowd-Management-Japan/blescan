@@ -48,8 +48,11 @@ class Config:
 
     class Transit:
         delta: int = 5
-        enabled: bool = False
-        internet_url: str = None
+        enabled: bool = True
+        internet_url: str = 'http://192.168.1.100:5000/status/transit'
+
+        # enabled: bool = False
+        # internet_url: str = None
 
     @staticmethod
     def check_integrity():

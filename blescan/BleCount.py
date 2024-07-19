@@ -3,9 +3,12 @@ from device import Device
 from datetime import datetime, timedelta
 from collections import namedtuple, Counter
 from storage import Storage
+from network import InternetStorage
 import math
 from config import Config
 import logging
+import requests
+import json
 
 logger = logging.getLogger('blescan.Counting')
 
@@ -109,9 +112,25 @@ class BleCount:
                 logger.debug(f"transit data for {reference_time} ready to be sent to the backend")
                 ##ESPARK: include here the function sending the data for the transit time to the backend
                 #         information to be sent are: device id (Config.serial_number), time (reference_time), and id list (self.transit_list)
-                #print(Config.serial_number)
-                #print(reference_time)
-                #print(self.transit_list)
+                print(Config.serial_number)
+                print(reference_time)
+                print(self.transit_list)
+
+                message = {
+                    'ID':Config.serial_number,
+                    'TIME':reference_time.isoformat(),
+                    'MAC':self.transit_list
+                    }
+
+                url = 'http://192.168.101.132:5000/status/update/transit'
+
+                try:
+                    response = requests.post(url, json=message, timeout=100)
+                    code = response.status_code
+                except Exception as e:
+                    logger.error("Error while sending message to internet")
+                    logger.error(e)
+
                 self.transit_list.clear()
         self.prev_remainder['transit'] = seconds % Config.Transit.delta
 
