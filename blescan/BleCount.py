@@ -29,10 +29,10 @@ class BleCount:
         Keyword arguments:
         rssi_threshold -- completely ignores devices below this threshold
 
-        rssi_close_threshold -- devices with a greater rssi_value are considered close. 
+        rssi_close_threshold -- devices with a greater rssi_value are considered close.
                     Used for the summary statistic
 
-        storage -- a single or a list of storage instances to save the data to. 
+        storage -- a single or a list of storage instances to save the data to.
                     Multiple storage instances could be used for saving to USB and to SDcard as backup.
                     This class uses the save_rssi and save_summary functions to save data.
         """
@@ -67,7 +67,7 @@ class BleCount:
     def filter_close(self, devices: List[Device]) -> List[Device]:
         """filter out devices below the close rssi threshold"""
         return [dev for dev in devices if dev.get_rssi() > self.rssi_close_threshold]
-    
+
     def process_scan(self, devices: List[Device], scantime: float):
         """process one scan interval: accumulates devices."""
         self.scan_info["scans"] += 1
@@ -77,7 +77,7 @@ class BleCount:
         close = self.filter_close(filtered)
         self.instantaneous_counts["all"].append(len(filtered))
         self.instantaneous_counts["close"].append(len(close))
-        
+
         # assumes multiple detections in a single scan
         for device in filtered:
             mac = device.get_mac()
@@ -122,16 +122,7 @@ class BleCount:
                     'MAC':self.transit_list
                     }
 
-                url = 'http://192.168.101.132:5000/status/update/transit'
-
-                try:
-                    response = requests.post(url, json=message, timeout=100)
-                    code = response.status_code
-                except Exception as e:
-                    logger.error("Error while sending message to internet")
-                    logger.error(e)
-
-                self.transit_list.clear()
+                self.store_transit(message)
         self.prev_remainder['transit'] = seconds % Config.Transit.delta
 
     def __str__(self) -> str:
@@ -181,7 +172,7 @@ class BleCount:
                 logger.error(f"No writing permission for {storage}")
             except Exception as e:
                 logger.error(f"Unkwnow writing error: {e}")
-        
+
         self.scanned_devices.clear()
         self.static_list.clear()
         self.instantaneous_counts["all"].clear()
@@ -190,3 +181,10 @@ class BleCount:
         self.scan_info["total_time"] = 0
 
         self.last_update = time
+
+    def store_transit(self, message):
+        logger.debug("storing data for transit-----------", self.storages)
+        # ogger.info(f"devices found: {len(self.scanned_devices)}")
+        # logger.debug(f"exact saving time: {datetime.now()}, exact delta: {datetime.now() - self.last_update}")
+
+        self.transit_list.clear()

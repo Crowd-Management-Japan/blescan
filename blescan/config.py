@@ -64,13 +64,13 @@ class Config:
 
         if Config.Counting.use_internet and Config.Counting.internet_url == None:
             raise ValueError(f"Using internet for counting without defining url!")
-        
+
         if Config.Transit.enabled and Config.Transit.internet_url == None:
             raise ValueError(f"Using internet for transit without defining url!")
-        
+
         if Config.XBee.use_xbee and not Config.XBee.internet_ids:
             raise ValueError("Using XBee, but no internet nodes set")
-        
+
         if not Config.Counting.storage and not Config.Beacon.storage and not Config.Counting.use_internet and not Config.Transit.enabled:
             raise ValueError("Not storing any counting, beacon or transit data!")
 
@@ -113,21 +113,21 @@ def _parse_counting_settings(inifile):
     Config.Counting.delta = int(section.get('delta', 10))
     Config.Counting.static_ratio = float(section.get('static_ratio', 0.7))
     Config.Counting.storage += _get_storage_paths(inifile, section, 'storage')
-    
+
     # return value is string. bool of non empty string ('0' aswell) results in True
     # therefore we need to cast to int first
     Config.Counting.use_internet = bool(int(section.get('internet_for_counting', '0')))
     Config.Counting.internet_url = section.get('url', None)
-    
+
 
 def _parse_xbee_settings(inifile):
     section = inifile["ZIGBEE"]
     Config.XBee.use_xbee = bool(int(section.get('use_zigbee', '0')))
     if not Config.XBee.use_xbee:
         return
-    
+
     Config.XBee.pan = int(section.get('pan', '99'))
-    
+
     Config.XBee.port = section.get('port', '/dev/ttyUSB0')
     Config.XBee.baud_rate = int(section.get('baud_rate', 9600))
     Config.XBee.is_coordinator = bool(int(section.get('is_coordinator', '0')))
@@ -187,4 +187,4 @@ def parse_ini(path='config.ini'):
 
 
 
-    
+

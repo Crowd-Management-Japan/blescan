@@ -9,7 +9,7 @@ WRAPPER_CONFIG_PATH = "./wrapper/config.ini"
 BLESCAN_CONFIG_PATH = "./etc/blescan_conf.ini"
 RESTART_COUNTER_PATH = "./etc/counter.txt"
 
-RESTART_LIMIT = 3
+RESTART_LIMIT = 3000
 
 config_found = True
 
@@ -42,7 +42,7 @@ def main():
             get_new_config()
         else:
             logging.info("config is up-to-date")
-            
+
         # give callback that this device is ready to use
         requests.post(get_url("setup/completed_{}"), timeout=5)
 
@@ -97,7 +97,7 @@ def get_url(endpoint):
     use {} in url to autofill own ID
     """
     end = str.format(endpoint, Config.id)
-    
+
     return f"http://{Config.url}/{end}"
 
 def get_new_config():
@@ -111,19 +111,19 @@ def get_new_config():
         raise ValueError(f'Getting config return error code {request.status_code}. {config}')
 
 
-    
+
     with open(BLESCAN_CONFIG_PATH, "w") as file:
         file.write(config)
-    
+
     logging.info("done")
-    
+
 
 def response_done():
     # give callback that this device is ready to use
     requests.post(get_url("setup/completed_{}"))
 
 def setup_logger():
-    
+
     if not os.path.exists("logs"):
         os.mkdir("logs")
 
@@ -151,7 +151,7 @@ if __name__ == "__main__":
             BLESCAN_CONFIG_PATH = sys.argv[2]
 
     setup_logger()
-    
+
     logging.info("--- starting blescan wrapper ---")
 
     pwd = os.getcwd()

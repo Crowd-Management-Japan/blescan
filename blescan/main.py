@@ -6,10 +6,10 @@ from statistics import mean
 # setup logging (before any imports use it)
 if not os.path.exists("logs"):
     os.mkdir("logs")
-    
+
 filename = f"logs/log_{datetime.now().strftime('%m%d')}.txt"
 logging.getLogger('blescan').setLevel(logging.DEBUG)
-logging.basicConfig(level=logging.ERROR, 
+logging.basicConfig(level=logging.ERROR,
                     format=('%(name)s %(levelname)s %(filename)s: %(lineno)d:\t%(message)s'))
 file_formatter = logging.Formatter("%(levelname)s:%(name)s:%(message)s")
 fileHandler = logging.FileHandler(filename)
@@ -97,7 +97,7 @@ def main(config_path: str='./config.ini'):
         led_communicator.disable_state(LEDState.SETUP)
 
     while running:
-        # scan for BLE devices 
+        # scan for BLE devices
         scanstart = datetime.now()
         devices = scanner.scan(scantime)
         scanend = datetime.now()
@@ -117,7 +117,7 @@ def main(config_path: str='./config.ini'):
                 file.write(str(mean(scantime_list)))
             scantime_list.clear()
 
-        # process scan  
+        # process scan
         counter.process_scan(devices, totaltime)
         beacon.process_scan(devices)
 
@@ -140,7 +140,7 @@ def adjust_scantime():
     if abs(1 - (scantime / Config.scantime)) > 0.05:
         # need to determine scanning time to ensure real time is as close as possible to 1 s
         logger.info("--- Determining optimal scanning time configuration ---")
-        scantime = Config.scantime / 2   
+        scantime = Config.scantime / 2
         step = scantime / 5
         for i in range(SCANTIME_PARAMETERS[0]):
             # peform a scan and check how long it takes
@@ -171,14 +171,14 @@ def shutdown_blescan():
     logger.info("--- stopping daemons ---")
     internet.stop()
     xbee.stop()
-    
+
     if Config.led:
         led_communicator.stop()
 
 def setup_internet():
     logger.debug("Setting up internet")
 
-    internet.set_url(Config.Counting.internet_url)
+    internet.set_count_url(Config.Counting.internet_url)
 
     up = InternetStorage(internet)
     Config.Counting.storage.append(up)
@@ -195,7 +195,7 @@ def setup_xbee():
     logger.info("Setting up xbee")
     xbee.set_message_received_callback(receive_xbee_message)
     xbee.start()
-    
+
     if xbee.is_sender:
         logger.debug("appending xbee storage")
         stor = XBeeStorage(xbee)
@@ -220,5 +220,5 @@ if __name__ == "__main__":
 
     logger.info("--- shutting down blescan ---")
     shutdown_blescan()
-    
+
     sys.exit(exit_code)
