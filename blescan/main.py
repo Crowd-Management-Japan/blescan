@@ -179,6 +179,7 @@ def setup_internet():
     logger.debug("Setting up internet")
 
     internet.set_count_url(Config.Counting.internet_url)
+    internet.set_transit_url(Config.Transit.internet_url)
 
     up = InternetStorage(internet)
     Config.Counting.storage.append(up)

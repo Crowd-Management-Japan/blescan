@@ -112,17 +112,7 @@ class BleCount:
                 logger.debug(f"transit data for {reference_time} ready to be sent to the backend")
                 ##ESPARK: include here the function sending the data for the transit time to the backend
                 #         information to be sent are: device id (Config.serial_number), time (reference_time), and id list (self.transit_list)
-                print(Config.serial_number)
-                print(reference_time)
-                print(self.transit_list)
-
-                message = {
-                    'ID':Config.serial_number,
-                    'TIME':reference_time.isoformat(),
-                    'MAC':self.transit_list
-                    }
-
-                self.store_transit(message)
+                self.store_transit(reference_time)
         self.prev_remainder['transit'] = seconds % Config.Transit.delta
 
     def __str__(self) -> str:
@@ -182,9 +172,15 @@ class BleCount:
 
         self.last_update = time
 
-    def store_transit(self, message):
-        logger.debug("storing data for transit-----------", self.storages)
-        # ogger.info(f"devices found: {len(self.scanned_devices)}")
-        # logger.debug(f"exact saving time: {datetime.now()}, exact delta: {datetime.now() - self.last_update}")
+    def store_transit(self, time: datetime):
+        logger.debug("storing data for transit")
+
+        id = Config.serial_number
+        timestamp = time.isoformat()
+        mac_list = self.transit_list
+
+        for storage in self.storages:
+            if isinstance(storage, InternetStorage):
+                storage.save_transit(id, timestamp, mac_list)
 
         self.transit_list.clear()

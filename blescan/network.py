@@ -216,5 +216,10 @@ class InternetStorage:
 
         self.com.enqueue_count_message(params)
 
-    def save_transit():
-        pass
+    def save_transit(self, id: int, timestamp: str, mac_list: list):
+        params = {
+            'ID'  : id,
+            'TIME': timestamp,
+            'MAC' : mac_list
+        }
+        self.com.enqueue_transit_message(params)
