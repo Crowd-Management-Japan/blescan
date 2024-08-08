@@ -1,10 +1,10 @@
+import logging
+from datetime import datetime, timedelta
 from typing import Dict, List, Union
+
+import config
 from device import Device
 from storage import Storage
-from datetime import datetime, timedelta
-import config
-
-import logging
 
 logger = logging.getLogger(f'blescan.Beacon')
 
@@ -29,9 +29,9 @@ class BleBeacon:
 
         scans -- the amount of scans to keep track of.
 
-        threshold -- if a device is in more or equal scans detected, it is considered present. 
+        threshold -- if a device is in more or equal scans detected, it is considered present.
 
-        storage -- storage -- a single or a list of storage instances to save the data to. 
+        storage -- storage -- a single or a list of storage instances to save the data to.
                     Multiple storage instances could be used for saving to USB and to SDcard as backup.
                     This class uses the save_beacon function to save the data.
         """
@@ -46,11 +46,11 @@ class BleBeacon:
         self.current_scan = 0
         self.matches = []
         self.storages = storage
-        self.macs = {} 
+        self.macs = {}
         self.beacons = {}
         self.last_scan_save = datetime.min
 
-    
+
     def accumulate(self) -> Dict[Device, int]:
         """
         Accumulate all scanned devices and get a list of devices and amount of scans they appeared
@@ -122,13 +122,13 @@ class BleBeacon:
     def check_shutdown(self, devices: List[Device]) -> bool:
         if config.Config.Beacon.shutdown_id == None or (not config.Config.Beacon.shutdown_on_scan):
             return False
-        
+
         mm_string = lambda dev: f"{dev.get_major()}{dev.get_minor()}"
 
         mm_strings = [mm_string(dev) for dev in devices]
 
         return config.Config.Beacon.shutdown_id in mm_strings
-    
+
     def store_scan(self, beacons):
 
         id = config.Config.serial_number
@@ -168,6 +168,3 @@ class BleBeacon:
                     logger.debug(f"Unkwnow writing error: {e}")
             del self.rssi_list[mac]
             del self.detected_time[mac]
-
-
-        

@@ -1,14 +1,15 @@
-
-from storage import prepare_row_data_summary
-from datetime import datetime
-from typing import List, Dict, Union
-import requests
-from time import sleep
 import logging
+import multiprocessing as mp
+from datetime import datetime
+from time import sleep
+from typing import List, Dict, Union
+
+import requests
+
 import util
 from config import Config
 from led import LEDState, LEDCommunicator
-import multiprocessing as mp
+from storage import prepare_row_data_summary
 
 logger = logging.getLogger('blescan.Network')
 
@@ -139,7 +140,6 @@ class InternetController:
             return queue.get()
         return None
 
-
     def _send_message(self, message: Dict, url: str, timeout=5) -> bool:
         """
         Try to send a single message to the upstream.
@@ -163,7 +163,6 @@ class InternetController:
         if self.led_communicator is not None:
             self.led_communicator.set_state(state, value)
 
-
 class InternetStorage:
     """
     Storage adapter for internet connection.
@@ -177,8 +176,6 @@ class InternetStorage:
         self.com = controller
 
     def save_count(self, id: int, timestamp: datetime, scans: int, scantime: float, rssi_list: List, instantaneous_counts: List, static_list: List):
-
-
         time_format = util.format_datetime_network(timestamp)
         old_format = util.format_datetime_old(timestamp)
 

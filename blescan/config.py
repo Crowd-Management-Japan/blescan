@@ -1,8 +1,8 @@
 import configparser
+import logging
 from typing import List
 
-import storage
-import logging
+from storage import Storage
 
 logger = logging.getLogger('blescan.config')
 
@@ -92,7 +92,7 @@ def _get_storage_paths(inifile, section, key):
 
         try:
 
-            stors.append(storage.Storage(path))
+            stors.append(Storage(path))
         except PermissionError:
             logger.error("No permissions for storage %s. Ignoring", path)
 
@@ -182,9 +182,3 @@ def parse_ini(path='config.ini'):
     _parse_transit_settings(inifile)
 
     Config.check_integrity()
-
-
-
-
-
-

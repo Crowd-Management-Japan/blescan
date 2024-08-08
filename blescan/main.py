@@ -1,7 +1,17 @@
 import logging
-from datetime import datetime, timedelta
 import os
+import sys
+from datetime import datetime
 from statistics import mean
+
+from BleBeacon import BleBeacon
+from BleCount import BleCount
+from config import Config, parse_ini
+from scanning import Scanner
+from led import LEDCommunicator, LEDState
+from network import InternetStorage, InternetController
+from storage import Storage
+from xbee import decode_data, XBeeStorage, XBeeController
 
 # setup logging (before any imports use it)
 if not os.path.exists("logs"):
@@ -16,23 +26,6 @@ fileHandler = logging.FileHandler(filename)
 fileHandler.setFormatter(file_formatter)
 logger = logging.getLogger('blescan')
 logger.addHandler(fileHandler)
-
-
-from scanning import Scanner
-from BleCount import BleCount
-from BleBeacon import BleBeacon
-from storage import Storage
-from led import LEDCommunicator, LEDState
-import util
-
-import sys
-from config import Config, parse_ini
-
-from network import InternetStorage, InternetController
-
-from xbee import decode_data, XBeeStorage, XBeeController
-
-import time
 
 led_communicator = LEDCommunicator()
 internet = InternetController(led_communicator=led_communicator)
@@ -191,7 +184,6 @@ def receive_xbee_message(sender, text):
     logger.debug(f"received message from xbee {sender}, decoded: {decoded}")
     internet.enqueue_message(decoded)
 
-
 def setup_xbee():
     logger.info("Setting up xbee")
     xbee.set_message_received_callback(receive_xbee_message)
@@ -203,7 +195,6 @@ def setup_xbee():
         Config.Counting.storage.append(stor)
     else:
         logger.debug("setting message callback")
-
 
 if __name__ == "__main__":
 

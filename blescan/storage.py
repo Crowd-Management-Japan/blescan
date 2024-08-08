@@ -1,12 +1,13 @@
-from datetime import datetime
-import os
 import csv
+import logging
+import os
+import shutil
+from datetime import datetime
 from statistics import pstdev, mean
-import logging 
 from typing import List
+
 import util
 from config import Config
-import shutil
 
 logger = logging.getLogger('blescan.Storage')
 
@@ -85,7 +86,6 @@ class Storage:
         rounded_time = now.replace(minute=rounded_minute, second=0, microsecond=0)
         return rounded_time.strftime('%H%M')
 
-
     def save_file(self, name, row_data):
         """
         Save data to a file. New files are created every 10 minutes to avoid a slow down for large files.
@@ -124,7 +124,6 @@ class Storage:
         self._save_rssi(rssi_row)
         self._save_summary(summary_row)
 
-
     def save_beacon_scan(self, id, time, beacons):
 
         tags_rssi = [(beacon.get_major() + beacon.get_minor(), beacon.get_rssi()) for beacon in beacons]
@@ -144,7 +143,7 @@ class Storage:
 
     def __str__(self):
         return f"Storage: {self.base_dir}"
-    
+
     def __repr__(self):
         return self.__str__()
 
@@ -171,7 +170,7 @@ def prepare_row_data_summary(id: int, time: str, scans: int, scantime: float, rs
     avg = None
     mini = None
     maxi = None
-    
+
     if tot_all > 0:
         std = round(pstdev(rssi),3)
         avg = round(mean(rssi),3)

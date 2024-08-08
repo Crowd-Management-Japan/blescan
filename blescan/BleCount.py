@@ -1,14 +1,12 @@
-from typing import List, Any, Union
-from device import Device
-from datetime import datetime, timedelta
-from collections import namedtuple, Counter
-from storage import Storage
-from network import InternetStorage
-import math
-from config import Config
 import logging
-import requests
-import json
+from collections import Counter
+from datetime import datetime, timedelta
+from typing import List, Union
+
+from config import Config
+from device import Device
+from network import InternetStorage
+from storage import Storage
 
 logger = logging.getLogger('blescan.Counting')
 

@@ -21,10 +21,10 @@ class Device():
                 self.major = valueText[-10:-6]
                 self.minor = valueText[-6:-2]
 
-        
+
     def get_mac(self):
         return self.bluepy_device.addr
-        
+
     def get_rssi(self):
         return self.bluepy_device.rssi
 
@@ -36,7 +36,7 @@ class Device():
 
     def get_minor(self):
         return self.minor
-    
+
 
     def get_tx_power(self):
         return self.tx
@@ -46,7 +46,7 @@ class Device():
 
     def get_beacon_uuid(self):
         return self.uuid
-    
+
 
 def transform_bluepy_results(bluepy_devices):
     return [Device(d) for d in bluepy_devices]

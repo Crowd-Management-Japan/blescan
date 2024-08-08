@@ -1,9 +1,11 @@
-from config import Config, read_config, read_last_updated, read_id
-import requests
 import logging
-import sys
 import os
+import sys
 from datetime import datetime, timedelta
+
+import requests
+
+from config import Config, read_config, read_last_updated, read_id
 
 WRAPPER_CONFIG_PATH = "./wrapper/config.ini"
 BLESCAN_CONFIG_PATH = "./etc/blescan_conf.ini"
@@ -34,7 +36,6 @@ def main():
     if Config.local_installation:
         logging.info("RUNNING LOCAL INSTALLATION. Quitting Wrapper and start blescan")
         sys.exit(50)
-
 
     try:
         if is_update_needed() or is_different_id():
@@ -89,8 +90,6 @@ def is_update_needed():
 
     return local_timestamp < remote_timestamp
 
-
-
 def get_url(endpoint):
     """
     Helper function / shortcut for server url.
@@ -110,20 +109,16 @@ def get_new_config():
     if request.status_code != 200:
         raise ValueError(f'Getting config return error code {request.status_code}. {config}')
 
-
-
     with open(BLESCAN_CONFIG_PATH, "w") as file:
         file.write(config)
 
     logging.info("done")
-
 
 def response_done():
     # give callback that this device is ready to use
     requests.post(get_url("setup/completed_{}"))
 
 def setup_logger():
-
     if not os.path.exists("logs"):
         os.mkdir("logs")
 
@@ -144,7 +139,6 @@ def setup_logger():
     rootLogger.addHandler(fileHandler)
 
 if __name__ == "__main__":
-
     if len(sys.argv) > 1:
         WRAPPER_CONFIG_PATH = sys.argv[1]
         if len(sys.argv) > 2:
