@@ -1,16 +1,15 @@
-
-from storage import prepare_row_data_summary
-from datetime import datetime
-from typing import List, Dict, Union
-import requests
-from time import sleep
 import logging
+import multiprocessing as mp
+from datetime import datetime
+from time import sleep
+from typing import List, Dict, Union
+
+import requests
+
 import util
 from config import Config
 from led import LEDState, LEDCommunicator
-import multiprocessing as mp
-
-import json
+from storage import prepare_row_data_summary
 
 logger = logging.getLogger('blescan.Network')
 
@@ -30,17 +29,26 @@ class InternetController:
     Stop the process by calling `stop()`. This will terminate the loop safely, with trying to send all
     enqueued messages before exiting.
     """
-
-    def __init__(self, url='', led_communicator:LEDCommunicator=None):
-        self.url:str = url
+    def __init__(self, count_url='', transit_url='', led_communicator:LEDCommunicator=None):
         self.led_communicator: LEDCommunicator = led_communicator
-        self.message_queue = mp.Queue()
+
+        # counting function
+        self.count_url: str = count_url
+        self.count_queue = mp.Queue()
+
+        # transit function
+        self.transit_url: str = transit_url
+        self.transit_queue = mp.Queue()
+
         self.process: mp.Process
         self.ready: bool = False
         self.running: bool = False
 
-    def set_url(self, url:str):
-        self.url = url
+    def set_count_url(self, url:str):
+        self.count_url = url
+
+    def set_transit_url(self, url:str):
+        self.transit_url = url
 
     def set_led_communicator(self, communicator: LEDCommunicator):
         self.led_communicator = communicator
@@ -51,6 +59,8 @@ class InternetController:
         """
         if self.running:
             logger.error("Internet process already running")
+            return
+
         self.running = True
         logger.info("--- starting Internet process ---")
 
@@ -69,84 +79,89 @@ class InternetController:
         self.process.join()
         logger.info("--- Internet process shut down ---")
 
-    def enqueue_message(self, message: str):
+    def enqueue_count_message(self, message: str):
+        self._enqueue_message(self.count_queue, message, 'count')
+
+    def enqueue_transit_message(self, message: str):
+        self._enqueue_message(self.transit_queue, message, 'transit')
+
+    def _enqueue_message(self, queue: mp.Queue, message: str, queue_name: str):
         """
         Enqueue a message to be sent.
         If the Queue is already full, older data will be dropped to add this message
         """
-        if self.message_queue.qsize() >= INTERNET_QUEUE_SIZE:
-            logger.warn("internet queue full. Dropping old data")
-            self.message_queue.get()
-            self.message_queue.task_done()
-        self.message_queue.put(message)
-        
-        logger.debug(f"adding message to internet queue. size: {self.message_queue.qsize()}")
+        if queue.qsize() >= INTERNET_QUEUE_SIZE:
+            logger.warn(f"internet {queue_name} queue full. Dropping old data")
+            queue.get()
+            queue.task_done()
+        queue.put(message)
+
+        logger.debug(f"adding message to internet {queue} queue. size: {queue.qsize()}")
 
     def _run(self):
         """
         Private method that is actually executed as a process.
         """
-        message = None
+        count_message = None
+        transit_message = None
+
         while self.running:
-
             if Config.led:
-                self._set_state(LEDState.INTERNET_STACKING, self.message_queue.qsize() > INTERNET_STACKING_THRESHOLD)
+                state = self.count_queue.qsize() > INTERNET_STACKING_THRESHOLD or self.transit_queue.qsize() > INTERNET_STACKING_THRESHOLD
+                self._set_state(LEDState.INTERNET_STACKING, state)
 
-            if message is not None:
-                success = self._send_message(message)
-                logger.debug(f"internet sending success: {success} ")
-                if success:
-                    if Config.led:
-                        self._set_state(LEDState.NO_INTERNET_CONNECTION, False)
-                    message = None
-                else:
-                    if Config.led:
-                        self._set_state(LEDState.NO_INTERNET_CONNECTION, True)
-                    sleep(2)
+            count_message = self._process_queue(self.count_url, self.count_queue, count_message, "count")
+            transit_message = self._process_queue(self.transit_url, self.transit_queue, transit_message, "transit")
 
-            elif self.message_queue.qsize() > 0:
-                logger.debug(f"retrieving next internet message")
-                message = self.message_queue.get()
-        # end while
+            if count_message is None and transit_message is None:
+                sleep(0.1)
 
-
-        logger.debug("internet process stopping safely. Send remaining messages")            
-        # first still selected message. Otherwhise the task is never marked done and the process stucks
-        if message:
-            self._send_message(message, timeout=0.5)
-
-        while self.message_queue.qsize() > 0:
-            logger.debug(f"internet remaining: {self.message_queue.qsize()}")
-            message = self.message_queue.get()
-            self._send_message(message, timeout=0.5)
-
+        logger.debug("internet process stopping safely. Send remaining messages")
+        self._send_remaining_message(self.count_url, self.count_queue, "count")
+        self._send_remaining_message(self.transit_url, self.transit_queue, "transit")
         logger.debug("internet process finished")
-            
 
-    def _send_message(self, message: Dict, timeout=5) -> bool:
+    def _process_queue(self, url: str, queue: mp.Queue, message: Union[Dict, None], queue_name: str) -> Union[Dict, None]:
+        if message is not None:
+            success = self._send_message(message, url)
+            logger.debug(f"internet sending success for {queue_name}: {success} ")
+            if success:
+                if Config.led:
+                    self._set_state(LEDState.NO_INTERNET_CONNECTION, False)
+                return None
+            else:
+                if Config.led:
+                    self._set_state(LEDState.NO_INTERNET_CONNECTION, True)
+                sleep(2)
+                return message
+
+        elif queue.qsize() > 0:
+            logger.debug(f"retrieving next internet message from {queue_name} queue")
+            return queue.get()
+        return None
+
+    def _send_message(self, message: Dict, url: str, timeout=5) -> bool:
         """
         Try to send a single message to the upstream.
         Return true if sending process was successfull.
         """
-        logger.debug("sending internet message...")
-        success = False
+        logger.debug(f"sending internet message to {url} ...")
         try:
-            response = requests.post(self.url, json=message, timeout=timeout)
-            code = response.status_code
-            success = (code == 200)
+            response = requests.post(url, json=message, timeout=timeout)
+            return response.status_code == 200
         except Exception as e:
-            logger.error("Error while sending message to internet")
-            logger.error(e)
+            logger.error(f"Error while sending message to internet: {e}")
             return False
-        return success
+
+    def _send_remaining_message(self, url: str, queue: mp.Queue, queue_name: str):
+        while queue.qsize() > 0:
+            logger.debug(f"internet remaining in {queue_name} queue: {queue.qsize()}")
+            message = queue.get()
+            self._send_message(message, url, timeout=0.5)
 
     def _set_state(self, state: LEDState, value: bool):
-        if self.led_communicator is None:
-            return
-        
-        self.led_communicator.set_state(state, value)
-
-
+        if self.led_communicator is not None:
+            self.led_communicator.set_state(state, value)
 
 class InternetStorage:
     """
@@ -161,8 +176,6 @@ class InternetStorage:
         self.com = controller
 
     def save_count(self, id: int, timestamp: datetime, scans: int, scantime: float, rssi_list: List, instantaneous_counts: List, static_list: List):
-
-
         time_format = util.format_datetime_network(timestamp)
         old_format = util.format_datetime_old(timestamp)
 
@@ -170,9 +183,9 @@ class InternetStorage:
         summary = prepare_row_data_summary(id, time_format, scans, scantime, rssi_list, instantaneous_counts, static_list)
         # {'id': '45', 'date': '20231020', 'time': '104000', 'scans': 8, 'scantime': '9.126',
         #  'tot_all': '26', 'tot_close': '26', 'inst_all': '26', 'inst_close': '26', 'stat_all': '26', 'stat_close': '26',
-        #  'rssi_avg': '-93.615', 'rssi_std': '3.329', 'rssi_min': '-99', 'rssi_max': '-85', 
+        #  'rssi_avg': '-93.615', 'rssi_std': '3.329', 'rssi_min': '-99', 'rssi_max': '-85',
         #  'rssi_thresh': -70, 'stat_ratio': '0.7', 'lat': '-3.52842', 'lon': '-15.52842'}
-        
+
         # %Y%m%d,%H%M%S
         date = datetime.now().strftime("%Y%m%d")
 
@@ -194,8 +207,16 @@ class InternetStorage:
                   'rssi_max':summary[13],
                   'rssi_thresh':Config.Counting.rssi_close_threshold,
                   'static_ratio':Config.Counting.static_ratio,
-                  'latitude':Config.latitude, 
-                  'longitude':Config.longitude  
+                  'latitude':Config.latitude,
+                  'longitude':Config.longitude
                   }
 
-        self.com.enqueue_message(params)
+        self.com.enqueue_count_message(params)
+
+    def save_transit(self, id: int, timestamp: str, mac_list: list):
+        params = {
+            'ID'  : id,
+            'TIME': timestamp,
+            'MAC' : mac_list
+        }
+        self.com.enqueue_transit_message(params)

@@ -1,15 +1,15 @@
-from time import sleep
-from enum import IntEnum
-from typing import Dict
 import logging
 import multiprocessing as mp
 import threading
+from enum import IntEnum
+from time import sleep
+from typing import Dict
 
 logger = logging.getLogger('blescan.LED')
 
 class LED:
     """
-    Setting up the LED. 
+    Setting up the LED.
     @param led_code refers to the path specified in the raspberry where the trigger and brightness file can be found. e.g. 'led0' for the green led.
     """
     def __init__(self, led_code):
@@ -26,12 +26,11 @@ class LED:
             logger.error("Missing permission for controlling LEDs. Disabling LED functionality")
             self.on = lambda: None
             self.off = lambda: None
-            
 
     def on(self):
         with open(self.brightness, 'w') as file:
             file.write("1")
-    
+
     def off(self):
         with open(self.brightness, 'w') as file:
             file.write("0")
@@ -78,8 +77,6 @@ def LED_TRIPLE(led: LED):
     led.off()
     sleep(.6)
 
-
-
 def _LED_BLINKING(time: float):
     def fun(led):
         led.on()
@@ -87,7 +84,7 @@ def _LED_BLINKING(time: float):
         led.off()
         sleep(time)
     return fun
-    
+
 LED_FAST = _LED_BLINKING(.25)
 LED_SLOW = _LED_BLINKING(.75)
 
@@ -121,8 +118,6 @@ def get_red_function(state: Dict[LEDState, bool]) -> lambda led: None:
         return LED_FAST
     if state.get(LEDState.NO_XBEE_CONNECTION, False):
         return LED_SLOW
-    
-
 
     return LED_SLEEP
 
@@ -133,7 +128,7 @@ def get_combined_function(state):
 
 class LEDCommunicator:
     """
-    This Class functions as a communicator towards the outside world. 
+    This Class functions as a communicator towards the outside world.
     It starts a daemon thread that uses both LEDs on the raspberry to send information
     """
 
@@ -150,8 +145,6 @@ class LEDCommunicator:
 
         self.green_function = LED_SLEEP
         self.red_function = LED_SLEEP
-
-
 
     def setup(self):
         self.green = LED('led0')
@@ -183,13 +176,12 @@ class LEDCommunicator:
                 both_function(self.green, self.red)
             sleep(0.25)
 
-
     def start(self):
         logger.info("--- starting LED thread ---")
         if self.running:
             logger.error("LED thread already started")
             return
-        
+
         self.running = True
 
         self.thread = mp.Process(target=self._start_thread, daemon=True)
@@ -205,9 +197,9 @@ class LEDCommunicator:
         if self._states.get(state, False) == value:
             self._states[state] = value
             return
-        
+
         logger.debug(f"changing led state {state} to {value}")
-        
+
         self._states[state] = value
         self._state_changed = True
 

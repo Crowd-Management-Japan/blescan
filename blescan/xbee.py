@@ -1,24 +1,17 @@
-from config import Config
-
-from typing import Dict, List, Union, Any, Set
-import multiprocessing as mp
-
-from storage import prepare_row_data_summary
-import util
-from datetime import datetime
-import time
 import logging
-import traceback
+import multiprocessing as mp
+import time
+from datetime import datetime
+from typing import Dict, List, Any
 
 import serial.tools.list_ports
-
-from led import LEDState
-
-
 from digi.xbee.devices import XBeeDevice
-from digi.xbee.models.address import XBee16BitAddress
-from digi.xbee.models.message import XBeeMessage
-from digi.xbee.exception import TransmitException,XBeeException,TimeoutException
+from digi.xbee.exception import TransmitException, TimeoutException
+
+import util
+from config import Config
+from led import LEDState
+from storage import prepare_row_data_summary
 
 logger = logging.getLogger('blescan.XBee')
 
@@ -29,7 +22,7 @@ def get_configuration(pan_id=1, is_coordinator=False, label=' ') -> Dict:
     params = {'ID': pan_id.to_bytes(8, 'little'), 'CE': (1 if is_coordinator else 0).to_bytes(1, 'little'), 'NI': bytearray(label, "utf8")}
 
     return params
-    
+
 def encode_data(data: Dict) -> str:
     """encode a dict for sending data to the homepage.
     ID,Time,Scans,Scantime,Tot.all,Tot.close,Inst.all,Inst.close,Stat.all,Stat.close,Avg RSSI,Std RSSI,Min RSSI,Max RSSI,Stat.ratio,Lat,Lon
@@ -43,8 +36,8 @@ def decode_data(data: str) -> Dict[str, Any]:
     s = data.split(",")
 
     return {'id': int(s[0]), 'timestamp': s[1], 'date': s[2], 'time': s[3], 'scans': int(s[4]), 'scantime': float(s[5]),
-            'tot_all': int(s[6]), 'tot_close': int(s[7]), 'inst_all': float(s[8]), 'inst_close': float(s[9]), 'stat_all': int(s[10]), 'stat_close': int(s[11]), 
-            'rssi_avg': float(s[12]), 'rssi_std': float(s[13]), 'rssi_min': int(s[14]), 'rssi_max': int(s[15]), 
+            'tot_all': int(s[6]), 'tot_close': int(s[7]), 'inst_all': float(s[8]), 'inst_close': float(s[9]), 'stat_all': int(s[10]), 'stat_close': int(s[11]),
+            'rssi_avg': float(s[12]), 'rssi_std': float(s[13]), 'rssi_min': int(s[14]), 'rssi_max': int(s[15]),
             'rssi_thresh': int(s[16]), 'static_ratio': float(s[17]), 'latitude': util.float_or_else(s[18], None), 'longitude': util.float_or_else(s[19], None)}
 
 def auto_find_port():
@@ -65,11 +58,7 @@ def auto_find_port():
         logger.warn(f"xbee port is ambigeous. [{','.join(possibles)}]")
     return possibles[0]
 
-
-
-
 class XBeeController:
-
     def __init__(self, port='auto', led_communicator=None):
         self.port: str = port
         self.device: XBeeDevice = None
@@ -112,7 +101,6 @@ class XBeeController:
                      CE: {util.byte_to_hex(self.device.get_parameter('CE'))},\n\
                      NI: {self.device.get_node_id()}]")
 
-
         logger.debug(f"device using protocol {self.device.get_protocol()}")
         logger.debug(f"device setup completed")
         if Config.led:
@@ -149,7 +137,7 @@ class XBeeController:
         while self.running:
             try:
                 self._setup()
-                
+
                 if self.is_sender:
                     logger.info("Running XBee as Sender")
                     self._run_sender()
@@ -162,7 +150,7 @@ class XBeeController:
                 if Config.led:
                     self._set_state(LEDState.XBEE_CRASH, True)
                 logger.error("XBee process crashed with exception - trying to restart in 5s")
-                
+
                 logger.error(e)
                 logger.debug("end of error message")
                 time.sleep(10)
@@ -180,7 +168,6 @@ class XBeeController:
             self._discover_network(5)
             logger.debug(f"devices discovered: [{','.join(id for id in self.targets.keys())}]")
             time.sleep(10)
-
 
     def _run_sender(self):
         available_targets = []
@@ -217,9 +204,8 @@ class XBeeController:
 
             elif self.message_queue.qsize() > 0:
                 message = self.message_queue.get()
-
         # end while
-        
+
         logger.debug("stopping xbee. Clearing queue")
         if len(available_targets) > 0:
             # first still selected message. Otherwhise the task is never marked done and the process stucks
@@ -233,17 +219,15 @@ class XBeeController:
 
         logger.debug("xbee process finished")
 
-
-
     def set_message_received_callback(self, callback: lambda sender, text: None):
         self.message_received_callback = callback
-        
+
     def enqueue_message(self, message: str):
         if self.message_queue.qsize() >= XBEE_QUEUE_SIZE:
             logger.warn("xbee queue full. Dropping old data")
             self.message_queue.get()
         self.message_queue.put(message)
-        
+
         logger.debug(f"adding message to xbee queue. size: {self.message_queue.qsize()}")
 
     def _discover_network(self, timeout=10) -> List[str]:
@@ -269,12 +253,11 @@ class XBeeController:
         logger.debug(f"found nodes: [{','.join(map(str, nodes))}]")
 
         discovered_ids = [node.get_node_id() for node in nodes]
-        
+
         self.targets.clear()
         self.targets.update({node.get_node_id(): node for node in nodes })
 
         return [id for id in self.target_ids if id in discovered_ids]
-
 
     def _send_message(self, target: str, message: str) -> bool:
         remote = self.targets.get(target, None)
@@ -294,22 +277,19 @@ class XBeeController:
 
         logger.debug(f"Message sent to {target}")
         return True
-    
+
     def _set_state(self, state: LEDState, value: bool):
         if self.led_communicator is None:
             return
-        
+
         self.led_communicator.set_state(state, value)
-    
+
 
 class XBeeStorage:
-
     def __init__(self, com):
         self.com = com
 
-    
     def save_count(self, id: int, timestamp: datetime, scans: int, scantime: float, rssi_list: List, instantaneous_counts: List, static_list: List):
-
         summary = prepare_row_data_summary(id, timestamp, scans, scantime, rssi_list, instantaneous_counts, static_list)
         # %Y%m%d,%H%M%S
         date = datetime.now().strftime("%Y%m%d")
@@ -335,10 +315,9 @@ class XBeeStorage:
                   'rssi_max':summary[13],
                   'rssi_thresh':Config.Counting.rssi_close_threshold,
                   'static_ratio': Config.Counting.static_ratio,
-                  'latitude': Config.latitude, 
+                  'latitude': Config.latitude,
                   'longitude': Config.longitude
                   }
 
         message = encode_data(params)
         self.com.enqueue_message(message)
-

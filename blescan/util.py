@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import Union, Any
 
-
 DATETIME_FORMAT_NETWORK = "%Y-%m-%d %H:%M:%S"
 
 def format_datetime_old(time: datetime) -> str:
@@ -21,7 +20,6 @@ def float_or_else(value: str, default: Any = None) -> Union[float,Any]:
         return float(value)
     except ValueError:
         return default
-    
+
 def byte_to_hex(byte_array) -> str:
     return ''.join('{:02x}'.format(_) for _ in byte_array)
-    
