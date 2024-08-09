@@ -1,11 +1,12 @@
-from typing import List, Any, Union
-from device import Device
-from datetime import datetime, timedelta
-from collections import namedtuple, Counter
-from storage import Storage
-import math
-from config import Config
 import logging
+from collections import Counter
+from datetime import datetime, timedelta
+from typing import List, Union
+
+from config import Config
+from device import Device
+from network import InternetStorage
+from storage import Storage
 
 logger = logging.getLogger('blescan.Counting')
 
@@ -26,10 +27,10 @@ class BleCount:
         Keyword arguments:
         rssi_threshold -- completely ignores devices below this threshold
 
-        rssi_close_threshold -- devices with a greater rssi_value are considered close. 
+        rssi_close_threshold -- devices with a greater rssi_value are considered close.
                     Used for the summary statistic
 
-        storage -- a single or a list of storage instances to save the data to. 
+        storage -- a single or a list of storage instances to save the data to.
                     Multiple storage instances could be used for saving to USB and to SDcard as backup.
                     This class uses the save_rssi and save_summary functions to save data.
         """
@@ -64,7 +65,7 @@ class BleCount:
     def filter_close(self, devices: List[Device]) -> List[Device]:
         """filter out devices below the close rssi threshold"""
         return [dev for dev in devices if dev.get_rssi() > self.rssi_close_threshold]
-    
+
     def process_scan(self, devices: List[Device], scantime: float):
         """process one scan interval: accumulates devices."""
         self.scan_info["scans"] += 1
@@ -74,7 +75,7 @@ class BleCount:
         close = self.filter_close(filtered)
         self.instantaneous_counts["all"].append(len(filtered))
         self.instantaneous_counts["close"].append(len(close))
-        
+
         # assumes multiple detections in a single scan
         for device in filtered:
             mac = device.get_mac()
@@ -109,10 +110,7 @@ class BleCount:
                 logger.debug(f"transit data for {reference_time} ready to be sent to the backend")
                 ##ESPARK: include here the function sending the data for the transit time to the backend
                 #         information to be sent are: device id (Config.serial_number), time (reference_time), and id list (self.transit_list)
-                #print(Config.serial_number)
-                #print(reference_time)
-                #print(self.transit_list)
-                self.transit_list.clear()
+                self.store_transit(reference_time)
         self.prev_remainder['transit'] = seconds % Config.Transit.delta
 
     def __str__(self) -> str:
@@ -162,7 +160,7 @@ class BleCount:
                 logger.error(f"No writing permission for {storage}")
             except Exception as e:
                 logger.error(f"Unkwnow writing error: {e}")
-        
+
         self.scanned_devices.clear()
         self.static_list.clear()
         self.instantaneous_counts["all"].clear()
@@ -171,3 +169,16 @@ class BleCount:
         self.scan_info["total_time"] = 0
 
         self.last_update = time
+
+    def store_transit(self, time: datetime):
+        logger.debug("storing data for transit")
+
+        id = Config.serial_number
+        timestamp = time.isoformat()
+        mac_list = self.transit_list
+
+        for storage in self.storages:
+            if isinstance(storage, InternetStorage):
+                storage.save_transit(id, timestamp, mac_list)
+
+        self.transit_list.clear()
