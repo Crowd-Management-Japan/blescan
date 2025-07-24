@@ -91,8 +91,8 @@ class InternetController:
         Enqueue a message to be sent.
         If the Queue is already full, older data will be dropped to add this message
         """
-        if ((queue_name == 'count' and queue.qsize() >= INTERNET_QUEUE_SIZE_COUNT) or
-            (queue_name == 'transit' and queue.size() >= INTERNET_QUEUE_SIZE_TRANSIT)):
+        if (queue_name == 'count' and queue.qsize() >= INTERNET_QUEUE_SIZE_COUNT) or \
+           (queue_name == 'transit' and queue.qsize() >= INTERNET_QUEUE_SIZE_TRANSIT):
             logger.warn(f"internet {queue_name} queue full. Dropping old data")
             queue.get()
         queue.put(message)
