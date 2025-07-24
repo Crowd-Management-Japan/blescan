@@ -1,9 +1,9 @@
-from config import Config, read_config, read_last_updated, read_id
-import requests
 import logging
-import sys
 import os
+import sys
+import requests
 from datetime import datetime, timedelta
+from config import Config, read_config, read_last_updated, read_id
 
 WRAPPER_CONFIG_PATH = "./wrapper/config.ini"
 BLESCAN_CONFIG_PATH = "./etc/blescan_conf.ini"

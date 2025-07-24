@@ -1,21 +1,22 @@
 from datetime import datetime
-import os
-import csv
 from statistics import pstdev, mean
-import logging 
 from typing import List
-import util
 from config import Config
+import csv
+import logging 
+import os
 import shutil
+import util
 
 logger = logging.getLogger('blescan.Storage')
 
-FILE_TYPE = ['beacon', 'rssi', 'stay_time', 'summary']
+FILE_TYPE = ['beacon', 'rssi', 'stay_time', 'summary','transit']
 FILE_HEADER = {'rssi': 'ID,Time,RSSI list',
                 'stay_time': 'ID,Time,Tag Name,Staying time,Average RSSI,Latitude,Longitude',
                 'beacon': 'ID,Time,Beacon list,RSSI list',
                 'summary': 'ID,Time,Scans,Scantime,Tot.all,Tot.close,Inst.all,Inst.close,Stat.all,Stat.close,'
-                            'Avg RSSI,Std RSSI,Min RSSI,Max RSSI,RSSI thresh,Stat.ratio,Lat,Lon'}
+                            'Avg RSSI,Std RSSI,Min RSSI,Max RSSI,RSSI thresh,Stat.ratio,Lat,Lon',
+                'transit': 'ID,Time,Close list'}
 
 class Storage:
     """
@@ -110,6 +111,9 @@ class Storage:
     def _save_summary(self, row_data):
         self.save_file('summary', row_data)
 
+    def _save_transit(self, row_data):
+        self.save_file('transit', row_data)
+
     def save_count(self, id: int, timestamp: datetime, scans: int, scantime: float, rssi_list: List, instantaneous_counts: List, static_list: List):
         """
         Saves devices given by BleCount.
@@ -142,6 +146,13 @@ class Storage:
         beacon_row = prepare_row_data_beacon(id, time, staying_time, rssi_list, manufacturer_data)
         self._save_beacon_stay(beacon_row)
 
+    def save_transit(self, id, time, transit_list):
+
+        transit_list.sort()
+        transit_row = prepare_row_data_transit(id, time.split('T')[1], transit_list)
+
+        self._save_transit(transit_row)
+
     def __str__(self):
         return f"Storage: {self.base_dir}"
     
@@ -157,6 +168,10 @@ def prepare_row_data_beacon_scan(id, time, tag_rssi_list: List[tuple]):
 def prepare_row_data_rssi(id, time, rssi_list):
     # surround the list by ""
     return [id, time, f"\"{','.join([str(_) for _ in rssi_list])}\""]
+
+def prepare_row_data_transit(id, time, close_ble_list):
+    # surround the list by ""
+    return [id, time, f"\"{','.join([str(_) for _ in close_ble_list])}\""]
 
 def prepare_row_data_summary(id: int, time: str, scans: int, scantime: float, rssi: List, instantaneous_counts: List, static_list: List):
 

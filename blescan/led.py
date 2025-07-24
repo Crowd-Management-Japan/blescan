@@ -215,5 +215,5 @@ class LEDCommunicator:
         logger.info("--- shutting down LED thread ---")
         if self.running == False:
             return
-        self.running = False
+        self.thread.terminate()
         self.thread.join()

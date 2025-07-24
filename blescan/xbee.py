@@ -1,24 +1,17 @@
-from config import Config
-
-from typing import Dict, List, Union, Any, Set
-import multiprocessing as mp
-
-from storage import prepare_row_data_summary
-import util
-from datetime import datetime
-import time
 import logging
-import traceback
+import multiprocessing as mp
+import time
+from datetime import datetime
+from typing import Dict, List, Any
 
 import serial.tools.list_ports
-
-from led import LEDState
-
-
 from digi.xbee.devices import XBeeDevice
-from digi.xbee.models.address import XBee16BitAddress
-from digi.xbee.models.message import XBeeMessage
 from digi.xbee.exception import TransmitException,XBeeException,TimeoutException
+
+import util
+from config import Config
+from led import LEDState
+from storage import prepare_row_data_summary
 
 logger = logging.getLogger('blescan.XBee')
 

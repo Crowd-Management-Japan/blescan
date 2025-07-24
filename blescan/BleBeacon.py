@@ -3,7 +3,6 @@ from device import Device
 from storage import Storage
 from datetime import datetime, timedelta
 import config
-
 import logging
 
 logger = logging.getLogger(f'blescan.Beacon')

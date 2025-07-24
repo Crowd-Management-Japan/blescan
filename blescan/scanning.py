@@ -1,7 +1,6 @@
+from typing import List
 import bluepy
 import device
-from typing import List
-from datetime import datetime
 
 class Scanner:
     """encapsulates the ble scanning logic"""

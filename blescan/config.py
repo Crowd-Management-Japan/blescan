@@ -1,6 +1,5 @@
-import configparser
 from typing import List
-
+import configparser
 import storage
 import logging
 
@@ -48,7 +47,8 @@ class Config:
 
     class Transit:
         delta: int = 5
-        enabled: bool = False
+        storage: List = []
+        use_internet: bool = False
         internet_url: str = None
 
     @staticmethod
@@ -62,13 +62,13 @@ class Config:
         if Config.Counting.use_internet and Config.Counting.internet_url == None:
             raise ValueError(f"Using internet for counting without defining url!")
         
-        if Config.Transit.enabled and Config.Transit.internet_url == None:
+        if Config.Transit.use_internet and Config.Transit.internet_url == None:
             raise ValueError(f"Using internet for transit without defining url!")
         
         if Config.XBee.use_xbee and not Config.XBee.internet_ids:
             raise ValueError("Using XBee, but no internet nodes set")
         
-        if not Config.Counting.storage and not Config.Beacon.storage and not Config.Counting.use_internet and not Config.Transit.enabled:
+        if not Config.Counting.storage and not Config.Beacon.storage and not Config.Counting.use_internet and not Config.Transit.use_internet:
             raise ValueError("Not storing any counting, beacon or transit data!")
 
 def _get_storage_paths(inifile, section, key):
@@ -99,7 +99,8 @@ def _parse_transit_settings(inifile):
     logger.debug("parsing transit time config")
     section = inifile['TRANSIT']
     Config.Transit.delta = int(section.get('delta', 5))
-    Config.Transit.enabled = bool(int(section.get('transit_enabled', '0')))
+    Config.Transit.storage += _get_storage_paths(inifile, section, 'storage')
+    Config.Transit.use_internet = bool(int(section.get('internet_for_transit', '0')))
     Config.Transit.internet_url = section.get('url', None)
 
 def _parse_counting_settings(inifile):
@@ -160,7 +161,6 @@ def _parse_user_settings(inifile):
         Config.latitude = float(location[0].strip())
         Config.longitude = float(location[1].strip())
 
-
 def parse_ini(path='config.ini'):
     """
     Parse the given ini-file and set corresponding values.
@@ -179,9 +179,3 @@ def parse_ini(path='config.ini'):
     _parse_transit_settings(inifile)
 
     Config.check_integrity()
-
-
-
-
-
-    

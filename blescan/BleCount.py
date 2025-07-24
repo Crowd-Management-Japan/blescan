@@ -1,9 +1,8 @@
-from typing import List, Any, Union
+from typing import List, Union
 from device import Device
 from datetime import datetime, timedelta
-from collections import namedtuple, Counter
+from collections import Counter
 from storage import Storage
-import math
 from config import Config
 import logging
 
@@ -49,7 +48,7 @@ class BleCount:
             "total_time": 0
         }
         self.static_list = []
-        self.transit_list = []
+        self.close_ble_list = []
         self.instantaneous_counts = {
             "all": [],
             "close": []
@@ -98,21 +97,15 @@ class BleCount:
         self.prev_remainder['count'] = seconds % Config.Counting.delta
 
         # prepare list for transit time detection
-        if Config.Transit.enabled:
-            for device in close:
-                code = self.encript_mac_to_code(device.get_mac())
-                self.transit_list.append(code)
+        for device in close:
+            code = self.encript_mac_to_code(device.get_mac())
+            self.close_ble_list.append(code)
 
-            if seconds % Config.Transit.delta < self.prev_remainder['transit']:
-                reference_time = midnight + timedelta(seconds=(seconds // Config.Transit.delta) * Config.Transit.delta)
-                self.transit_list = list(set(self.transit_list))
-                logger.debug(f"transit data for {reference_time} ready to be sent to the backend")
-                ##ESPARK: include here the function sending the data for the transit time to the backend
-                #         information to be sent are: device id (Config.serial_number), time (reference_time), and id list (self.transit_list)
-                #print(Config.serial_number)
-                #print(reference_time)
-                #print(self.transit_list)
-                self.transit_list.clear()
+        if seconds % Config.Transit.delta < self.prev_remainder['transit']:
+            reference_time = midnight + timedelta(seconds=(seconds // Config.Transit.delta) * Config.Transit.delta)
+            self.close_ble_list = list(set(self.close_ble_list))
+            logger.debug(f"transit data for {reference_time} ready to be sent to the backend")
+            self.store_transit(reference_time)
         self.prev_remainder['transit'] = seconds % Config.Transit.delta
 
     def __str__(self) -> str:
@@ -171,3 +164,15 @@ class BleCount:
         self.scan_info["total_time"] = 0
 
         self.last_update = time
+
+    def store_transit(self, time: datetime):
+        logger.debug("storing data for transit")
+
+        id = Config.serial_number
+        timestamp = time.isoformat()
+        close_ble_list = self.close_ble_list
+
+        for storage in self.storages:
+            storage.save_transit(id, timestamp, close_ble_list)
+
+        self.close_ble_list.clear()

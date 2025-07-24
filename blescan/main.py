@@ -1,7 +1,8 @@
-import logging
 from datetime import datetime, timedelta
-import os
 from statistics import mean
+import logging
+import os
+import sys
 
 # setup logging (before any imports use it)
 if not os.path.exists("logs"):
@@ -17,22 +18,14 @@ fileHandler.setFormatter(file_formatter)
 logger = logging.getLogger('blescan')
 logger.addHandler(fileHandler)
 
-
 from scanning import Scanner
 from BleCount import BleCount
 from BleBeacon import BleBeacon
 from storage import Storage
 from led import LEDCommunicator, LEDState
-import util
-
-import sys
 from config import Config, parse_ini
-
 from network import InternetStorage, InternetController
-
 from xbee import decode_data, XBeeStorage, XBeeController
-
-import time
 
 led_communicator = LEDCommunicator()
 internet = InternetController(led_communicator=led_communicator)
@@ -42,13 +35,14 @@ xbee = XBeeController(led_communicator=led_communicator)
 CODE_SHUTDOWN_DEVICE = 100
 SCANTIME_VALUE = "./etc/scantime.txt"
 SCANTIME_PARAMETERS = [15,2]
+LED_CONFIG_PATH = "./etc/led.txt"
 
 def main(config_path: str='./config.ini'):
     parse_ini(config_path)
     if Config.led:
         led_communicator.start()
 
-    if Config.Counting.use_internet:
+    if Config.Counting.use_internet or Config.Transit.use_internet:
         setup_internet()
 
     if Config.XBee.use_xbee:
@@ -71,6 +65,10 @@ def main(config_path: str='./config.ini'):
     delta = Config.Counting.delta
     static_ratio = Config.Counting.static_ratio
     counter = BleCount(threshold, close_threshold, static_ratio, counting_storage)
+
+    # hardcode LED setting to be used in future startups
+    with open(LED_CONFIG_PATH, 'w') as file:
+        file.write(str(int(Config.led)))
 
     logger.debug("reconstructing old files (if any)")
     # stitch files from previous days
@@ -126,6 +124,9 @@ def main(config_path: str='./config.ini'):
             running = False
             exit_code = CODE_SHUTDOWN_DEVICE
 
+    if exit_code == CODE_SHUTDOWN_DEVICE:
+        logger.info("All processes stopped, shutting down device now.")
+
     return exit_code
 
 def adjust_scantime():
@@ -178,7 +179,8 @@ def shutdown_blescan():
 def setup_internet():
     logger.debug("Setting up internet")
 
-    internet.set_url(Config.Counting.internet_url)
+    internet.set_count_url(Config.Counting.internet_url)
+    internet.set_transit_url(Config.Transit.internet_url)
 
     up = InternetStorage(internet)
     Config.Counting.storage.append(up)

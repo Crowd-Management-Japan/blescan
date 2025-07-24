@@ -4,41 +4,51 @@
 BLESCAN_CONFIG_PATH='etc/blescan.conf'
 BLESCAN_LOCAL_CONFIG='blescan/config.ini'
 WRAPPER_CONFIG_PATH='etc/wrapper.conf'
+LED_CONFIG_PATH='etc/led.txt'
 
 # update git repository
 git pull origin master
 
 source .venv/bin/activate
 
+# read LED control flag (1 = enable, 0 = disable)
+LED_ENABLED=1
+if [[ -f $LED_CONFIG_PATH ]]; then
+    LED_ENABLED=$(cat $LED_CONFIG_PATH | tr -d '\r\n ')
+fi
+
 # led0 = green, led1 = red
 ledGreen='/sys/class/leds/led0'
 ledRed='/sys/class/leds/led1'
 leds=($ledGreen $ledRed)
 
-for led in ${leds[@]}
-do
-    echo changing permission for $led
-    sudo chmod 666 $led/trigger
-    sudo chmod 666 $led/brightness
+if [[ "$LED_ENABLED" -eq 1 ]]; then
+    for led in ${leds[@]}
+    do
+        echo changing permission for $led
+        sudo chmod 666 $led/trigger
+        sudo chmod 666 $led/brightness
 
-    echo default-on > $led/trigger
-done
+        echo default-on > $led/trigger
+    done
 
-sleep 1
+    sleep 1
 
-echo starting wrapper program...
+    echo starting wrapper program...
 
-echo heartbeat > $ledGreen/trigger
-echo heartbeat > $ledRed/trigger
+    echo heartbeat > $ledGreen/trigger
+    echo heartbeat > $ledRed/trigger
+fi
 
 # -u for unbuffered output to see it in systemctl status
-python -u wrapper/blescan-wrapper.py $WRAPPER_CONFIG_PATH $BLESCAN_CONFIG_PATH
+python3 -u wrapper/blescan-wrapper.py $WRAPPER_CONFIG_PATH $BLESCAN_CONFIG_PATH
 
 wrapper_code=$?
 echo exit code $wrapper_code
 
-echo input > $ledRed/trigger
-
+if [[ "$LED_ENABLED" -eq 1 ]]; then
+    echo input > $ledRed/trigger
+fi
 
 
 if [[ "$wrapper_code" -eq 0 ]]
@@ -57,10 +67,11 @@ exitcode=$?
 
 sleep 0.5
 
-echo none > $ledGreen/trigger
-echo default-on > $ledRed/trigger
-echo 1 > $ledRed/brightness
-
+if [[ "$LED_ENABLED" -eq 1 ]]; then
+    echo none > $ledGreen/trigger
+    echo default-on > $ledRed/trigger
+    echo 1 > $ledRed/brightness
+fi
 
 echo blescan exit_code: $exitcode
 
