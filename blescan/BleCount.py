@@ -166,7 +166,7 @@ class BleCount:
         self.last_update = time
 
     def store_transit(self, time: datetime):
-        logger.debug("storing data for transit")
+        logger.debug("storing transit")
 
         id = Config.serial_number
         timestamp = time.isoformat()

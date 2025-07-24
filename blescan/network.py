@@ -14,7 +14,8 @@ logger = logging.getLogger('blescan.Network')
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 INTERNET_STACKING_THRESHOLD = 3
-INTERNET_QUEUE_SIZE = 1000
+INTERNET_QUEUE_SIZE_COUNT = 1000
+INTERNET_QUEUE_SIZE_TRANSIT = 100
 
 class InternetController:
     """
@@ -90,10 +91,10 @@ class InternetController:
         Enqueue a message to be sent.
         If the Queue is already full, older data will be dropped to add this message
         """
-        if queue.qsize() >= INTERNET_QUEUE_SIZE:
+        if (queue_name == 'count' and queue.qsize() >= INTERNET_QUEUE_SIZE_COUNT) or
+           (queue_name == 'transit' and queue.size() >= INTERNET_QUEUE_SIZE_TRANSIT):
             logger.warn(f"internet {queue_name} queue full. Dropping old data")
             queue.get()
-            queue.task_done()
         queue.put(message)
         
         logger.debug(f"adding message to internet {queue} queue. size: {queue.qsize()}")
