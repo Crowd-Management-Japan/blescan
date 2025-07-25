@@ -44,7 +44,7 @@ def main():
             logging.info("config is up-to-date")
             
         # give callback that this device is ready to use
-        requests.post(get_url("setup/completed_{}"), timeout=5)
+        requests.post(get_url("scanner/completed_{}"), timeout=5)
 
     except requests.RequestException:
         logging.info("No internet connection, starting with existing config")
@@ -77,7 +77,7 @@ def is_update_needed():
         logging.info("Ignoring update due to config")
         return False
 
-    request = requests.get(get_url("setup/last_updated/{}"), timeout=5)
+    request = requests.get(get_url("scanner/last_updated/{}"), timeout=5)
     remote_timestamp = request.json()['last_changed']
 
     local_timestamp = read_last_updated(BLESCAN_CONFIG_PATH)
@@ -102,7 +102,7 @@ def get_url(endpoint):
 
 def get_new_config():
     logging.info("--- updating config --- ")
-    url = get_url("setup/config_{}")
+    url = get_url("scanner/config_{}")
 
     request = requests.get(url)
     config = request.text
@@ -120,7 +120,7 @@ def get_new_config():
 
 def response_done():
     # give callback that this device is ready to use
-    requests.post(get_url("setup/completed_{}"))
+    requests.post(get_url("scanner/completed_{}"))
 
 def setup_logger():
     
