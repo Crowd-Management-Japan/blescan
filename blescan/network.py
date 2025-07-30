@@ -227,6 +227,9 @@ class InternetStorage:
             self.com.enqueue_count_message(params)
 
     def save_transit(self, id: int, timestamp: str, close_ble_list: list):
+
+        logger.debug(f"data: {close_ble_list}")
+        
         if Config.Transit.use_internet:
             params = {
                 'id':id,
