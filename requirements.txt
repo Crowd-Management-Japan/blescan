@@ -1,4 +1,4 @@
-bluepy==1.3.0
+bluepy @ file://${PROJECT_DIR}/etc/wheels/bluepy-1.3.0-cp39-cp39-linux_armv7l.whl
 certifi==2024.2.2
 charset-normalizer==3.3.2
 digi-xbee==1.4.1
