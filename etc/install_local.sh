@@ -4,6 +4,7 @@
 # this means that only blescan/config.ini is used for everything
 
 directory=`pwd`
+export PROJECT_DIR="$directory"
 
 # add user to bluetooth group, such that blescan can be executed without sudo
 sudo usermod -a -G bluetooth `whoami`
