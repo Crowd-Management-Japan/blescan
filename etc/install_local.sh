@@ -4,7 +4,6 @@
 # this means that only blescan/config.ini is used for everything
 
 directory=`pwd`
-export PROJECT_DIR="$directory"
 
 # add user to bluetooth group, such that blescan can be executed without sudo
 sudo usermod -a -G bluetooth `whoami`
@@ -19,7 +18,14 @@ echo -------- creating python environment --------
 python3 -m venv .venv
 source .venv/bin/activate
 
-pip install -r requirements.txt
+# to avoid issues with wheels being removed from pywheels they are stored and installed locally
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_DIR"
+
+WHEEL_DIR="$PROJECT_DIR/etc/wheels"
+
+pip install --no-index --find-links "file://$WHEEL_DIR" -r requirements.txt
 
 # somehow pyserial is installed with the current version but still there
 # is some issue that we have to reinstall it to work.
