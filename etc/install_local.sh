@@ -25,7 +25,7 @@ cd "$PROJECT_DIR"
 
 WHEEL_DIR="$PROJECT_DIR/etc/wheels"
 
-pip install --no-index --find-links "file://$WHEEL_DIR" -r requirements.txt
+pip install --find-links "file://$WHEEL_DIR" --extra-index-url https://www.piwheels.org/simple -r requirements.txt
 
 # somehow pyserial is installed with the current version but still there
 # is some issue that we have to reinstall it to work.
