@@ -20,7 +20,6 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 cd "$PROJECT_DIR"
 sudo python3 -m pip  install --find-links "file://$WHEEL_DIR" --extra-index-url https://www.piwheels.org/simple -r requirements.txt
-cd ..
 
 echo -------- creating python environment --------
 
