@@ -10,8 +10,17 @@ sudo usermod -a -G bluetooth `whoami`
 
 
 # install apt requirements
+sudo apt update
+sudo apt install python3-pip
 sudo apt install git python3-venv -y  
 
+# install dependencies systemwide (not the cleanest solution, but need a patch for clean installs)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+cd "$PROJECT_DIR"
+sudo python3 -m pip  install --find-links "file://$WHEEL_DIR" --extra-index-url https://www.piwheels.org/simple -r requirements.txt
+cd ..
 
 echo -------- creating python environment --------
 
@@ -19,10 +28,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 
 # to avoid issues with wheels being removed from pywheels they are stored and installed locally
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_DIR"
-
 WHEEL_DIR="$PROJECT_DIR/etc/wheels"
 
 pip install --find-links "file://$WHEEL_DIR" --extra-index-url https://www.piwheels.org/simple -r requirements.txt
