@@ -15,7 +15,7 @@ sudo apt install git python3-venv -y
 
 echo -------- creating python environment --------
 
-python3 -m venv .venv
+python3.7 -m venv .venv
 source .venv/bin/activate
 
 # to avoid issues with wheels being removed from pywheels they are stored and installed locally
