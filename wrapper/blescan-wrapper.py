@@ -89,16 +89,25 @@ def is_update_needed():
 
     return local_timestamp < remote_timestamp
 
+def get_base_url(url: str) -> str:
+    url = url.strip().rstrip("/")
 
+    parsed = urlparse(url)
+
+    if parsed.scheme:
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError(f"Unsupported URL scheme: {parsed.scheme}")
+        return url
+
+    return "http://" + url
 
 def get_url(endpoint):
     """
     Helper function / shortcut for server url.
-    use {} in url to autofill own ID
+    use {} in endpoint to autofill own ID
     """
-    end = str.format(endpoint, Config.id)
-    
-    return f"http://{Config.url}/{end}"
+    end = endpoint.format(Config.id).lstrip("/")
+    return f"{get_base_url(Config.url)}/{end}"
 
 def get_new_config():
     logging.info("--- updating config --- ")
