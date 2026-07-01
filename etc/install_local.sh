@@ -34,7 +34,7 @@ source .venv/bin/activate
 # to avoid issues with wheels being removed from pywheels they are stored and installed locally
 cd "$PROJECT_DIR"
 
-pip install --find-links "file://$WHEEL_DIR" --extra-index-url https://www.piwheels.org/simple -r requirements.txt
+pip install --default-timeout=100 --retries=10 --find-links "file://$WHEEL_DIR" --extra-index-url https://www.piwheels.org/simple -r requirements.txt
 
 # somehow pyserial is installed with the current version but still there
 # is some issue that we have to reinstall it to work.
