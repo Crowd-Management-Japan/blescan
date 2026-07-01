@@ -21,6 +21,7 @@ sudo apt install git python3-venv -y
 # install dependencies systemwide (not the cleanest solution, but need a patch for clean installs)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+WHEEL_DIR="$PROJECT_DIR/etc/wheels"
 
 cd "$PROJECT_DIR"
 sudo python3 -m pip  install --find-links "file://$WHEEL_DIR" --extra-index-url https://www.piwheels.org/simple -r requirements.txt
@@ -32,7 +33,6 @@ source .venv/bin/activate
 
 # to avoid issues with wheels being removed from pywheels they are stored and installed locally
 cd "$PROJECT_DIR"
-WHEEL_DIR="$PROJECT_DIR/etc/wheels"
 
 pip install --find-links "file://$WHEEL_DIR" --extra-index-url https://www.piwheels.org/simple -r requirements.txt
 
