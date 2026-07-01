@@ -4,6 +4,7 @@ import sys
 import requests
 from datetime import datetime, timedelta
 from config import Config, read_config, read_last_updated, read_id
+from urllib.parse import urlparse
 
 WRAPPER_CONFIG_PATH = "./wrapper/config.ini"
 BLESCAN_CONFIG_PATH = "./etc/blescan_conf.ini"
