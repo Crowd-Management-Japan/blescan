@@ -24,7 +24,17 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 WHEEL_DIR="$PROJECT_DIR/etc/wheels"
 
 cd "$PROJECT_DIR"
-sudo -H -E python3 -m pip install --break-system-packages --root-user-action=ignore --find-links "file://$WHEEL_DIR" --extra-index-url https://www.piwheels.org/simple -r requirements.txt
+PIP_FLAGS=""
+
+if python3 -m pip install --help | grep -q -- "--break-system-packages"; then
+    PIP_FLAGS="$PIP_FLAGS --break-system-packages"
+fi
+
+if python3 -m pip install --help | grep -q -- "--root-user-action"; then
+    PIP_FLAGS="$PIP_FLAGS --root-user-action=ignore"
+fi
+
+sudo -H -E python3 -m pip install $PIP_FLAGS --find-links "file://$WHEEL_DIR" --extra-index-url https://www.piwheels.org/simple -r requirements.txt
 
 echo -------- creating python environment --------
 
