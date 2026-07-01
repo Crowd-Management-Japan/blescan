@@ -24,7 +24,7 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 WHEEL_DIR="$PROJECT_DIR/etc/wheels"
 
 cd "$PROJECT_DIR"
-PIP_BREAK_SYSTEM_PACKAGES=1 sudo -E python3 -m pip install --find-links "file://$WHEEL_DIR" --extra-index-url https://www.piwheels.org/simple -r requirements.txt
+sudo -E python3 -m pip install --break-system-packages --root-user-action=ignore --find-links "file://$WHEEL_DIR" --extra-index-url https://www.piwheels.org/simple -r requirements.txt
 
 echo -------- creating python environment --------
 
