@@ -19,7 +19,7 @@ This happens automatically when a Raspberry Pi is configured in this way has an 
 To reduce costs, when supplying Raspi's with possible internet connections (we used UMTS with data sims), the devices can also build a zigbee network.
 If this is set up correctly, all information will be sent to a subset of devices that have a possible uplink.
 
-## Mode 2: beacon detection annd tracking
+## Mode 2: beacon detection and tracking
 The second possible mode filters scanned devices on a given uuid. 
 For this we used iBeacons, which can be configured with an app to send exactly the same data all the time. 
 These beacons were handed out to customers of the location where the tracking should take place. 
@@ -28,6 +28,9 @@ They get briefed what these beacons are and that they are used for tracking and 
 Because of the long-term analysis the method used is a sliding window and if a beacon is detected more than N times in the last X seconds, it is considered present.
 As soon as it is not present anymore, the data is saved with time entered and total staying time near the concrete device.
 The values can be configured using the config file.
+
+## Mode 3: travel time between different nodes
+Blescan also allows to determine the travel time between different devices set apart from each other's. For example, if a device is set at the one side of a bridge and a second device is set at the other side, blescan allows to estimate the time people takes to move from one side to the other. This function needs a communication with the server where timestamps of the different devices are sent and compared.
 
 # Privacy
 As this topic is about tracking people and analysing crowd densities, privacy is an important part to think about.
@@ -45,6 +48,8 @@ These beacons are for this purpose and do not change their mac address over time
 It is always the same.
 They have to be handed out to people, so they know that they get something that has to do with an experiment.
 Is is important and your responsibility to brief them according to privacy laws in your country!
+
+For Mode 3 blescan employs a simple algorithm to anonymize the IDs detected from the various devices to ensure that it is not possible to link IDs used in the software with real IDs associated with Bluetooth devices. Technically, this step should not be needed since IDs automatically change within Bluetooth devices to avoid people being tracked, but blescan adds an additional layer of privacy.
 
 # How to use
 
