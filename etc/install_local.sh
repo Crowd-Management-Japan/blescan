@@ -8,6 +8,10 @@ directory=`pwd`
 # add user to bluetooth group, such that blescan can be executed without sudo
 sudo usermod -a -G bluetooth `whoami`
 
+# ensure that sudo can be used without password, a bit risky, but need this patch to make it work on clean installations
+USER_NAME=$(whoami)
+echo "$USER_NAME ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/$USER_NAME >/dev/null
+sudo chmod 440 /etc/sudoers.d/$USER_NAME
 
 # install apt requirements
 sudo apt update
