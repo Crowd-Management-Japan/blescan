@@ -53,6 +53,7 @@ echo -------- install systemd services --------
 # install systemd service for blescan
 cp etc/blescan_service_template etc/blescan.service
 sed "s|BLESCAN_DIRECTORY|$directory|g" etc/blescan_service_template > etc/blescan.service
+sed "s|BLESCAN_DIRECTORY|$directory|g" "s|BLESCAN_USER|$USER_NAME|g" etc/blescan_service_template > etc/blescan.service
 
 sudo cp -f etc/blescan.service /lib/systemd/system/
 sudo systemctl enable blescan.service
